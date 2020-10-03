@@ -4,8 +4,8 @@
 
 - [x] criar repositorio;
 - [ ] ler enunciado e perceber bem;
-- [ ]...;
+
 
 ## Autores
-*duartejeremias
-*RodrigoLiu1710
++ @duartejeremias
++ @RodrigoLiu1710
