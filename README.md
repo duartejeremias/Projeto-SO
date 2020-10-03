@@ -7,5 +7,5 @@
 - [ ]...;
 
 ## Autores
-@duartejeremias
-@RodrigoLiu1710
+*duartejeremias
+*RodrigoLiu1710
