@@ -6,6 +6,8 @@
 - [x] criar repositorio;
 - [ ] ler enunciado e perceber bem;
 
+### Links de interesse
+https://www.youtube.com/playlist?list=PL9IEJIKnBJjFZxuqyJ9JqVYmuFZHr7CFM
 
 ## Autores
 + @duartejeremias
