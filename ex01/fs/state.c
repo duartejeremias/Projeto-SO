@@ -61,7 +61,7 @@ int inode_create(type nType) {
             if (nType == T_DIRECTORY) {
                 /* Initializes entry table */
                 inode_table[inumber].data.dirEntries = malloc(sizeof(DirEntry) * MAX_DIR_ENTRIES);
-                
+
                 for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
                     inode_table[inumber].data.dirEntries[i].inumber = FREE_INODE;
                 }
@@ -88,7 +88,7 @@ int inode_delete(int inumber) {
     if ((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].nodeType == T_NONE)) {
         printf("inode_delete: invalid inumber\n");
         return FAIL;
-    } 
+    }
 
     inode_table[inumber].nodeType = T_NONE;
     /* see inode_table_destroy function */
@@ -151,7 +151,7 @@ int dir_reset_entry(int inumber, int sub_inumber) {
         return FAIL;
     }
 
-    
+
     for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
         if (inode_table[inumber].data.dirEntries[i].inumber == sub_inumber) {
             inode_table[inumber].data.dirEntries[i].inumber = FREE_INODE;
@@ -168,7 +168,7 @@ int dir_reset_entry(int inumber, int sub_inumber) {
  * Input:
  *  - inumber: identifier of the i-node
  *  - sub_inumber: identifier of the sub i-node entry
- *  - sub_name: name of the sub i-node entry 
+ *  - sub_name: name of the sub i-node entry
  * Returns: SUCCESS or FAIL
  */
 int dir_add_entry(int inumber, int sub_inumber, char *sub_name) {
@@ -195,7 +195,7 @@ int dir_add_entry(int inumber, int sub_inumber, char *sub_name) {
                entry name must be non-empty\n");
         return FAIL;
     }
-    
+
     for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
         if (inode_table[inumber].data.dirEntries[i].inumber == FREE_INODE) {
             inode_table[inumber].data.dirEntries[i].inumber = sub_inumber;
@@ -218,14 +218,14 @@ void inode_print_tree(FILE *fp, int inumber, char *name) {
         fprintf(fp, "%s\n", name);
         return;
     }
-
+    
     if (inode_table[inumber].nodeType == T_DIRECTORY) {
         fprintf(fp, "%s\n", name);
         for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
             if (inode_table[inumber].data.dirEntries[i].inumber != FREE_INODE) {
                 char path[MAX_FILE_NAME];
                 if (snprintf(path, sizeof(path), "%s/%s", name, inode_table[inumber].data.dirEntries[i].name) > sizeof(path)) {
-                    fprintf(stderr, "truncation when building full path\n");
+                    fprintf(fp, "truncation when building full path\n");
                 }
                 inode_print_tree(fp, inode_table[inumber].data.dirEntries[i].inumber, path);
             }

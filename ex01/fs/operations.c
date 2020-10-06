@@ -43,14 +43,14 @@ void split_parent_child_from_path(char * path, char ** parent, char ** child) {
 /*
  * Initializes tecnicofs and creates root node.
  */
-void init_fs() {
+void init_fs(FILE *outputFile) {
 	inode_table_init();
-	
+
 	/* create root inode */
 	int root = inode_create(T_DIRECTORY);
-	
+
 	if (root != FS_ROOT) {
-		printf("failed to create node for tecnicofs root\n");
+		fprintf(outputFile, "failed to create node for tecnicofs root\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -113,7 +113,7 @@ int lookup_sub_node(char *name, DirEntry *entries) {
  *  - nodeType: type of node
  * Returns: SUCCESS or FAIL
  */
-int create(char *name, type nodeType){
+int create(char *name, type nodeType, FILE *outputFile){
 
 	int parent_inumber, child_inumber;
 	char *parent_name, *child_name, name_copy[MAX_FILE_NAME];
@@ -127,7 +127,7 @@ int create(char *name, type nodeType){
 	parent_inumber = lookup(parent_name);
 
 	if (parent_inumber == FAIL) {
-		printf("failed to create %s, invalid parent dir %s\n",
+		fprintf(outputFile, "failed to create %s, invalid parent dir %s\n",
 		        name, parent_name);
 		return FAIL;
 	}
@@ -135,13 +135,13 @@ int create(char *name, type nodeType){
 	inode_get(parent_inumber, &pType, &pdata);
 
 	if(pType != T_DIRECTORY) {
-		printf("failed to create %s, parent %s is not a dir\n",
+		fprintf(outputFile, "failed to create %s, parent %s is not a dir\n",
 		        name, parent_name);
 		return FAIL;
 	}
 
 	if (lookup_sub_node(child_name, pdata.dirEntries) != FAIL) {
-		printf("failed to create %s, already exists in dir %s\n",
+		fprintf(outputFile, "failed to create %s, already exists in dir %s\n",
 		       child_name, parent_name);
 		return FAIL;
 	}
@@ -149,13 +149,13 @@ int create(char *name, type nodeType){
 	/* create node and add entry to folder that contains new node */
 	child_inumber = inode_create(nodeType);
 	if (child_inumber == FAIL) {
-		printf("failed to create %s in  %s, couldn't allocate inode\n",
+		fprintf(outputFile, "failed to create %s in  %s, couldn't allocate inode\n",
 		        child_name, parent_name);
 		return FAIL;
 	}
 
 	if (dir_add_entry(parent_inumber, child_inumber, child_name) == FAIL) {
-		printf("could not add entry %s in dir %s\n",
+		fprintf(outputFile, "could not add entry %s in dir %s\n",
 		       child_name, parent_name);
 		return FAIL;
 	}
@@ -170,7 +170,7 @@ int create(char *name, type nodeType){
  *  - name: path of node
  * Returns: SUCCESS or FAIL
  */
-int delete(char *name){
+int delete(char *name, FILE *outputFile){
 
 	int parent_inumber, child_inumber;
 	char *parent_name, *child_name, name_copy[MAX_FILE_NAME];
@@ -184,7 +184,7 @@ int delete(char *name){
 	parent_inumber = lookup(parent_name);
 
 	if (parent_inumber == FAIL) {
-		printf("failed to delete %s, invalid parent dir %s\n",
+		fprintf(outputFile, "failed to delete %s, invalid parent dir %s\n",
 		        child_name, parent_name);
 		return FAIL;
 	}
@@ -192,7 +192,7 @@ int delete(char *name){
 	inode_get(parent_inumber, &pType, &pdata);
 
 	if(pType != T_DIRECTORY) {
-		printf("failed to delete %s, parent %s is not a dir\n",
+		fprintf(outputFile, "failed to delete %s, parent %s is not a dir\n",
 		        child_name, parent_name);
 		return FAIL;
 	}
@@ -200,7 +200,7 @@ int delete(char *name){
 	child_inumber = lookup_sub_node(child_name, pdata.dirEntries);
 
 	if (child_inumber == FAIL) {
-		printf("could not delete %s, does not exist in dir %s\n",
+		fprintf(outputFile, "could not delete %s, does not exist in dir %s\n",
 		       name, parent_name);
 		return FAIL;
 	}
@@ -208,20 +208,20 @@ int delete(char *name){
 	inode_get(child_inumber, &cType, &cdata);
 
 	if (cType == T_DIRECTORY && is_dir_empty(cdata.dirEntries) == FAIL) {
-		printf("could not delete %s: is a directory and not empty\n",
+		fprintf(outputFile, "could not delete %s: is a directory and not empty\n",
 		       name);
 		return FAIL;
 	}
 
 	/* remove entry from folder that contained deleted node */
 	if (dir_reset_entry(parent_inumber, child_inumber) == FAIL) {
-		printf("failed to delete %s from dir %s\n",
+		fprintf(outputFile, "failed to delete %s from dir %s\n",
 		       child_name, parent_name);
 		return FAIL;
 	}
 
 	if (inode_delete(child_inumber) == FAIL) {
-		printf("could not delete inode number %d from dir %s\n",
+		fprintf(outputFile, "could not delete inode number %d from dir %s\n",
 		       child_inumber, parent_name);
 		return FAIL;
 	}
