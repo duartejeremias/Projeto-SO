@@ -5,9 +5,9 @@
 void init_fs();
 void destroy_fs();
 int is_dir_empty(DirEntry *dirEntries);
-int create(char *name, type nodeType, FILE *outputFile);
-int delete(char *name, FILE *outputFile);
+int create(char *name, type nodeType);
+int delete(char *name);
 int lookup(char *name);
-void print_tecnicofs_tree(FILE *fp);
+void print_tecnicofs_tree(char *fileName);
 
 #endif /* FS_H */

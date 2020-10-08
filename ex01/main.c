@@ -32,17 +32,17 @@ char* removeCommand() {
     return NULL;
 }
 
-void errorParse(FILE *outputFile){
-    fprintf(outputFile, "Error: command invalid\n");
+void errorParse(){
+    fprintf(stderr, "Error: command invalid\n");
     exit(EXIT_FAILURE);
 }
 
-void processInput(char *inputFileName, FILE *outputFile){
+void processInput(char *inputFileName){
     char line[MAX_INPUT_SIZE];
     FILE *inputFile = fopen(inputFileName, "r");
 
     if(inputFile == NULL){
-      fprintf(outputFile, "Error: file %s does not exist\n", inputFileName);
+      fprintf(stderr, "Error: file %s does not exist\n", inputFileName);
       return;
     }
 
@@ -60,21 +60,21 @@ void processInput(char *inputFileName, FILE *outputFile){
         switch (token) {
             case 'c':
                 if(numTokens != 3)
-                    errorParse(outputFile);
+                    errorParse();
                 if(insertCommand(line))
                     break;
                 return;
 
             case 'l':
                 if(numTokens != 2)
-                    errorParse(outputFile);
+                    errorParse();
                 if(insertCommand(line))
                     break;
                 return;
 
             case 'd':
                 if(numTokens != 2)
-                    errorParse(outputFile);
+                    errorParse();
                 if(insertCommand(line))
                     break;
                 return;
@@ -83,14 +83,14 @@ void processInput(char *inputFileName, FILE *outputFile){
                 break;
 
             default: { /* error */
-                errorParse(outputFile);
+                errorParse();
             }
         }
     }
     fclose(inputFile);
 }
 
-void applyCommands(FILE *outputFile){
+void applyCommands(){
     while (numberCommands > 0){
         const char* command = removeCommand();
         if (command == NULL){
@@ -101,7 +101,7 @@ void applyCommands(FILE *outputFile){
         char name[MAX_INPUT_SIZE];
         int numTokens = sscanf(command, "%c %s %c", &token, name, &type);
         if (numTokens < 2) {
-            fprintf(outputFile, "Error: invalid command in Queue\n");
+            fprintf(stderr, "Error: invalid command in Queue\n");
             exit(EXIT_FAILURE);
         }
 
@@ -110,31 +110,31 @@ void applyCommands(FILE *outputFile){
             case 'c':
                 switch (type) {
                     case 'f':
-                        fprintf(outputFile, "Create file: %s\n", name);
-                        create(name, T_FILE, outputFile);
+                        fprintf(stdout, "Create file: %s\n", name);
+                        create(name, T_FILE);
                         break;
                     case 'd':
-                        fprintf(outputFile,"Create directory: %s\n", name);
-                        create(name, T_DIRECTORY, outputFile);
+                        fprintf(stdout,"Create directory: %s\n", name);
+                        create(name, T_DIRECTORY);
                         break;
                     default:
-                        fprintf(outputFile, "Error: invalid node type\n");
+                        fprintf(stderr, "Error: invalid node type\n");
                         exit(EXIT_FAILURE);
                 }
                 break;
             case 'l':
                 searchResult = lookup(name);
                 if (searchResult >= 0)
-                    fprintf(outputFile, "Search: %s found\n", name);
+                    fprintf(stdout, "Search: %s found\n", name);
                 else
-                    fprintf(outputFile, "Search: %s not found\n", name);
+                    fprintf(stdout, "Search: %s not found\n", name);
                 break;
             case 'd':
-                fprintf(outputFile, "Delete: %s\n", name);
-                delete(name, outputFile);
+                fprintf(stdout, "Delete: %s\n", name);
+                delete(name);
                 break;
             default: { /* error */
-                fprintf(outputFile, "Error: command to apply\n");
+                fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -142,7 +142,6 @@ void applyCommands(FILE *outputFile){
 }
 
 int main(int argc, char* argv[]) {
-   FILE *outputFile = fopen(argv[2], "w");
    clock_t endTime, startTime = clock();
    float timeSpent;
 
@@ -150,11 +149,10 @@ int main(int argc, char* argv[]) {
    init_fs();
 
    /* process input and print tree */
-   processInput(argv[1], outputFile);
-   applyCommands(outputFile);
+   processInput(argv[1]);
+   applyCommands();
 
-   print_tecnicofs_tree(outputFile);
-   fclose(outputFile);
+   print_tecnicofs_tree(argv[2]);
 
    /* release allocated memory */
    destroy_fs();
