@@ -141,9 +141,31 @@ void applyCommands(){
     }
 }
 
+/*
+ * Validates command line arguments
+ * Input: argument count and arguments
+ * Output: 1 if invalid, 0 if valid
+ */
+int invalid_arg(int argc, char* argv[]){
+   if(argc != 5)
+      fprintf(stderr, "Error: Incorrect number of arguments given.\n");
+   else if(!argv[1])
+      fprintf(stderr, "Error: Input file given is NULL.\n");
+   else if(!argv[2])
+      fprintf(stderr, "Error: Output file given is NULL.\n");
+   else if(atoi(argv[3]) <= 0)
+      fprintf(stderr, "Error: Invalid number of threads given.\n");
+   else if(!argv[4])
+      fprintf(stderr, "Error: Synch method is NULL.\n");
+   else return 0;
+   return 1;
+}
+
 int main(int argc, char* argv[]) {
    clock_t endTime, startTime = clock();
    float timeSpent;
+
+   if(invalid_arg(argc, argv)) exit(EXIT_FAILURE);
 
    /* init filesystem */
    init_fs();
