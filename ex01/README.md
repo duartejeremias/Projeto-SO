@@ -14,7 +14,7 @@
 3. verificar se e necessario fazer print dos erros nesse ficheiro em vez do stderr
 4. introduzir o output final: "TecnicoFS completed in [duration] seconds." no stdout
 
-### aprender a usar o gettimeofday
+### <s> aprender a usar o gettimeofday </s>
 1. aprender gettimeofday para produzir o output final.
 
 ### alteracoes para o projeto funcionar multi-thread e sincronizado
