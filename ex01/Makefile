@@ -3,7 +3,7 @@
 
 CC   = gcc
 LD   = gcc
-CFLAGS =-Wall -lpthread -std=gnu99 -I../
+CFLAGS =-Wall -std=gnu99 -I../
 LDFLAGS=-lm
 
 # A phony target is one that is not really the name of a file
@@ -13,7 +13,7 @@ LDFLAGS=-lm
 all: tecnicofs
 
 tecnicofs: fs/state.o fs/operations.o main.o
-	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs fs/state.o fs/operations.o main.o
+	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs fs/state.o fs/operations.o main.o -lpthread 
 
 fs/state.o: fs/state.c fs/state.h tecnicofs-api-constants.h
 	$(CC) $(CFLAGS) -o fs/state.o -c fs/state.c
