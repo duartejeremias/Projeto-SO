@@ -4,6 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
+#include <sys/time.h>
 #include <ctype.h>
 #include "fs/operations.h"
 
@@ -90,63 +92,66 @@ void processInput(char *inputFileName){
     fclose(inputFile);
 }
 
-void applyCommands(){
-    while (numberCommands > 0){
-        const char* command = removeCommand();
-        if (command == NULL){
-            continue;
-        }
+void *applyCommands(void*ptr){
+   while (numberCommands > 0){
+      const char* command = removeCommand();
 
-        char token, type;
-        char name[MAX_INPUT_SIZE];
-        int numTokens = sscanf(command, "%c %s %c", &token, name, &type);
-        if (numTokens < 2) {
-            fprintf(stderr, "Error: invalid command in Queue\n");
-            exit(EXIT_FAILURE);
-        }
+      if (command == NULL){
+         continue;
+      }
 
-        int searchResult;
-        switch (token) {
-            case 'c':
-                switch (type) {
-                    case 'f':
-                        fprintf(stdout, "Create file: %s\n", name);
-                        create(name, T_FILE);
-                        break;
-                    case 'd':
-                        fprintf(stdout,"Create directory: %s\n", name);
-                        create(name, T_DIRECTORY);
-                        break;
-                    default:
-                        fprintf(stderr, "Error: invalid node type\n");
-                        exit(EXIT_FAILURE);
-                }
-                break;
-            case 'l':
-                searchResult = lookup(name);
-                if (searchResult >= 0)
-                    fprintf(stdout, "Search: %s found\n", name);
-                else
-                    fprintf(stdout, "Search: %s not found\n", name);
-                break;
-            case 'd':
-                fprintf(stdout, "Delete: %s\n", name);
-                delete(name);
-                break;
-            default: { /* error */
-                fprintf(stderr, "Error: command to apply\n");
-                exit(EXIT_FAILURE);
+      char token, type;
+      char name[MAX_INPUT_SIZE];
+      int numTokens = sscanf(command, "%c %s %c", &token, name, &type);
+      if (numTokens < 2) {
+         fprintf(stderr, "Error: invalid command in Queue\n");
+         exit(EXIT_FAILURE);
+      }
+
+      int searchResult;
+      switch (token) {
+         case 'c':
+            switch (type) {
+               case 'f':
+                  fprintf(stdout, "Create file: %s\n", name);
+                  create(name, T_FILE);
+                  break;
+               case 'd':
+                  fprintf(stdout,"Create directory: %s\n", name);
+                  create(name, T_DIRECTORY);
+                  break;
+               default:
+                  fprintf(stderr, "Error: invalid node type\n");
+                  exit(EXIT_FAILURE);
             }
-        }
-    }
+            break;
+
+         case 'l':
+            searchResult = lookup(name);
+            if (searchResult >= 0)
+               fprintf(stdout, "Search: %s found\n", name);
+            else
+               fprintf(stdout, "Search: %s not found\n", name);
+            break;
+
+         case 'd':
+            fprintf(stdout, "Delete: %s\n", name);
+            delete(name);
+            break;
+         default: { /* error */
+            fprintf(stderr, "Error: command to apply\n");
+            exit(EXIT_FAILURE);
+         }
+      }
+   }
+   return NULL;
 }
 
 /*
- * Validates command line arguments
+ * Parsing of the command line arguments
  * Input: argument count and arguments
- * Output: 1 if invalid, 0 if valid
  */
-int invalid_arg(int argc, char* argv[]){
+void argParse(int argc, char* argv[]){
    if(argc != 5)
       fprintf(stderr, "Error: Incorrect number of arguments given.\n");
    else if(!argv[1])
@@ -157,31 +162,50 @@ int invalid_arg(int argc, char* argv[]){
       fprintf(stderr, "Error: Invalid number of threads given.\n");
    else if(!argv[4])
       fprintf(stderr, "Error: Synch method is NULL.\n");
-   else return 0;
-   return 1;
+   else {
+      numberThreads = atoi(argv[3]);
+      return;
+   }
+   exit(EXIT_FAILURE);
 }
 
 int main(int argc, char* argv[]) {
-   clock_t endTime, startTime = clock();
-   float timeSpent;
+   argParse(argc, argv);
 
-   if(invalid_arg(argc, argv)) exit(EXIT_FAILURE);
+   struct timeval startTime, endTime;
+   int i;
+
+   pthread_t threadPool[numberThreads];
+   gettimeofday(&startTime, NULL);
 
    /* init filesystem */
    init_fs();
 
    /* process input and print tree */
    processInput(argv[1]);
-   applyCommands();
+
+   for(i = 0; i < numberThreads; i++){
+      if(pthread_create(&threadPool[i], NULL, applyCommands, NULL)){
+         fprintf(stderr, "Error: thread creation failed.\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+
+   for(i = 0; i < numberThreads; i++){
+      if(pthread_join(threadPool[i], NULL)){
+         fprintf(stderr, "Error: thread merging failed.\n");
+         exit(EXIT_FAILURE);
+      }
+   }
 
    print_tecnicofs_tree(argv[2]);
+
+   gettimeofday(&endTime, NULL);
 
    /* release allocated memory */
    destroy_fs();
 
-   endTime = clock();
-   timeSpent = (float)(endTime - startTime) / CLOCKS_PER_SEC;
-   printf("TecnicoFS completed in %.4f seconds.\n", timeSpent);
+   printf("TecnicoFS completed in %.4f seconds.\n", (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec) / 1e6);
 
    exit(EXIT_SUCCESS);
 }
