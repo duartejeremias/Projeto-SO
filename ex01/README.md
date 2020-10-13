@@ -17,6 +17,8 @@
 ### <s> aprender a usar o gettimeofday </s>
 1. aprender gettimeofday para produzir o output final.
 
-### alteracoes para o projeto funcionar multi-thread e sincronizado
+### <s> alteracoes para o projeto funcionar multi-thread e sincronizado </s>
 1. <s> Criar pool de threads para alimentar com comandos e funcoes </s>
-2. Criar funcoes de sincronizacao com mutex
+2. <s> Criar funcoes de sincronizacao com mutex </s>
+
+## DONE
