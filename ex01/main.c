@@ -11,8 +11,22 @@
 
 #define MAX_COMMANDS 150000
 #define MAX_INPUT_SIZE 100
+#define TRUE 1
+#define FALSE 0
+#define MUTEX 1
+#define RWLOCK 2
+#define NOSYNC 3
+#define CMD 4
+#define RD 5
+#define WR 6
 
 int numberThreads = 0;
+
+int lockType = 0;
+
+pthread_mutex_t mutex;
+pthread_mutex_t commandLock;
+pthread_rwlock_t rwlock;
 
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
@@ -92,13 +106,76 @@ void processInput(char *inputFileName){
     fclose(inputFile);
 }
 
+void lock(int mode){
+   if(lockType == NOSYNC) return;
+   else if(mode == CMD){
+      if(pthread_mutex_lock(&commandLock)){
+         fprintf(stderr, "Error: Mutex failed to lock\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   else if(lockType == MUTEX){
+      if(pthread_mutex_lock(&mutex)){
+         fprintf(stderr, "Error: Mutex failed to lock\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   else if(lockType == RWLOCK){
+      if(mode == RD){
+         if(pthread_rwlock_rdlock(&rwlock)){
+            fprintf(stderr, "Error: Rwlock failed to lock\n");
+            exit(EXIT_FAILURE);
+         }
+      }
+      if(mode == WR){
+         if(pthread_rwlock_wrlock(&rwlock)){
+            fprintf(stderr, "Error: Rwlock failed to lock\n");
+            exit(EXIT_FAILURE);
+         }
+      }
+   }
+}
+
+void unlock(int mode){
+   if(lockType == NOSYNC) return;
+   if(mode == CMD){
+      if(pthread_mutex_unlock(&commandLock)){
+         fprintf(stderr, "Error: Mutex failed to unlock\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   else if(lockType == MUTEX){
+      if(pthread_mutex_unlock(&mutex)){
+         fprintf(stderr, "Error: Mutex failed to unlock\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   else if(lockType == RWLOCK){
+      if(pthread_rwlock_unlock(&rwlock)){
+         fprintf(stderr, "Error: rwlock failed to unlock\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+}
+
 void *applyCommands(void*ptr){
-   while (numberCommands > 0){
+   while (TRUE){
+
+      lock(CMD);
+      if(numberCommands == 0){
+         unlock(CMD);
+         break;
+      }
+      unlock(CMD);
+
+      lock(CMD);
       const char* command = removeCommand();
 
       if (command == NULL){
-         continue;
+         unlock(CMD);
+         break;
       }
+      unlock(CMD);
 
       char token, type;
       char name[MAX_INPUT_SIZE];
@@ -114,11 +191,15 @@ void *applyCommands(void*ptr){
             switch (type) {
                case 'f':
                   fprintf(stdout, "Create file: %s\n", name);
+                  lock(WR);
                   create(name, T_FILE);
+                  unlock(0);
                   break;
                case 'd':
                   fprintf(stdout,"Create directory: %s\n", name);
+                  lock(WR);
                   create(name, T_DIRECTORY);
+                  unlock(0);
                   break;
                default:
                   fprintf(stderr, "Error: invalid node type\n");
@@ -127,7 +208,9 @@ void *applyCommands(void*ptr){
             break;
 
          case 'l':
+            lock(RD);
             searchResult = lookup(name);
+            unlock(0);
             if (searchResult >= 0)
                fprintf(stdout, "Search: %s found\n", name);
             else
@@ -136,7 +219,9 @@ void *applyCommands(void*ptr){
 
          case 'd':
             fprintf(stdout, "Delete: %s\n", name);
+            lock(WR);
             delete(name);
+            unlock(0);
             break;
          default: { /* error */
             fprintf(stderr, "Error: command to apply\n");
@@ -164,9 +249,57 @@ void argParse(int argc, char* argv[]){
       fprintf(stderr, "Error: Synch method is NULL.\n");
    else {
       numberThreads = atoi(argv[3]);
+
+      if(!strcmp(argv[4], "mutex")) lockType = MUTEX;
+      else if(!strcmp(argv[4], "rwlock")) lockType = RWLOCK;
+      else if(!strcmp(argv[4], "nosync")) lockType = NOSYNC;
+      else {
+         fprintf(stderr, "Error: Invalid sync method.\n");
+         exit(EXIT_FAILURE);
+      }
       return;
    }
    exit(EXIT_FAILURE);
+}
+
+void init_lock(){
+   if(lockType == NOSYNC) return;
+   if(lockType == MUTEX){
+      if(pthread_mutex_init(&mutex, NULL)){
+         fprintf(stderr, "Error: Mutex failed to init\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   else if(lockType == RWLOCK){
+      if(pthread_rwlock_init(&rwlock, NULL)){
+         fprintf(stderr, "Error: rwlock failed to init\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   if(pthread_mutex_init(&commandLock, NULL)){
+      fprintf(stderr, "Error: Mutex failed to init\n");
+      exit(EXIT_FAILURE);
+   }
+}
+
+void destroy_lock(){
+   if(lockType == NOSYNC) return;
+   if(lockType == MUTEX){
+      if(pthread_mutex_destroy(&mutex)){
+         fprintf(stderr, "Error: Failed destruction of mutex.\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   else if(lockType == RWLOCK){
+      if(pthread_rwlock_destroy(&rwlock)){
+         fprintf(stderr, "Error: Failed destruction of rwlock.\n");
+         exit(EXIT_FAILURE);
+      }
+   }
+   if(pthread_mutex_destroy(&commandLock)){
+      fprintf(stderr, "Error: Failed destruction of mutex.\n");
+      exit(EXIT_FAILURE);
+   }
 }
 
 int main(int argc, char* argv[]) {
@@ -181,26 +314,34 @@ int main(int argc, char* argv[]) {
    /* init filesystem */
    init_fs();
 
+   init_lock();
+
    /* process input and print tree */
    processInput(argv[1]);
 
-   for(i = 0; i < numberThreads; i++){
-      if(pthread_create(&threadPool[i], NULL, applyCommands, NULL)){
-         fprintf(stderr, "Error: thread creation failed.\n");
-         exit(EXIT_FAILURE);
+   if(lockType == NOSYNC){
+      applyCommands(NULL);
+   } else {
+      for(i = 0; i < numberThreads; i++){
+         if(pthread_create(&threadPool[i], NULL, applyCommands, NULL)){
+            fprintf(stderr, "Error: thread creation failed.\n");
+            exit(EXIT_FAILURE);
+         }
       }
-   }
-
-   for(i = 0; i < numberThreads; i++){
-      if(pthread_join(threadPool[i], NULL)){
-         fprintf(stderr, "Error: thread merging failed.\n");
-         exit(EXIT_FAILURE);
+      for(i = 0; i < numberThreads; i++){
+         if(pthread_join(threadPool[i], NULL)){
+            fprintf(stderr, "Error: thread merging failed.\n");
+            exit(EXIT_FAILURE);
+         }
       }
    }
 
    print_tecnicofs_tree(argv[2]);
 
    gettimeofday(&endTime, NULL);
+
+   destroy_lock();
+
 
    /* release allocated memory */
    destroy_fs();
