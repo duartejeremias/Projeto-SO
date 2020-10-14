@@ -177,6 +177,7 @@ void *applyCommands(void*ptr){
       }
       unlock(CMD);
 
+
       char token, type;
       char name[MAX_INPUT_SIZE];
       int numTokens = sscanf(command, "%c %s %c", &token, name, &type);
@@ -252,7 +253,13 @@ void argParse(int argc, char* argv[]){
 
       if(!strcmp(argv[4], "mutex")) lockType = MUTEX;
       else if(!strcmp(argv[4], "rwlock")) lockType = RWLOCK;
-      else if(!strcmp(argv[4], "nosync")) lockType = NOSYNC;
+      else if(!strcmp(argv[4], "nosync")){
+         if(numberThreads > 1){
+            fprintf(stderr, "Error: NoSync only available with 1 thread execution.\n");
+            exit(EXIT_FAILURE);
+         }
+         lockType = NOSYNC;
+      }
       else {
          fprintf(stderr, "Error: Invalid sync method.\n");
          exit(EXIT_FAILURE);
