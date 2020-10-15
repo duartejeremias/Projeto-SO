@@ -106,27 +106,40 @@ void processInput(char *inputFileName){
     fclose(inputFile);
 }
 
+/*
+ * Given a mode, this function locks the thread
+ * Input: lock mode
+ */
 void lock(int mode){
+   //if there isnt syncronization
    if(lockType == NOSYNC) return;
+
+   //if lock necessary is the command lock
    else if(mode == CMD){
       if(pthread_mutex_lock(&commandLock)){
          fprintf(stderr, "Error: Mutex failed to lock\n");
          exit(EXIT_FAILURE);
       }
    }
+
+   //if locktype is mutex
    else if(lockType == MUTEX){
       if(pthread_mutex_lock(&mutex)){
          fprintf(stderr, "Error: Mutex failed to lock\n");
          exit(EXIT_FAILURE);
       }
    }
+
+   //if locktype is rwlock
    else if(lockType == RWLOCK){
+      //if rwlock necessary is RD
       if(mode == RD){
          if(pthread_rwlock_rdlock(&rwlock)){
             fprintf(stderr, "Error: Rwlock failed to lock\n");
             exit(EXIT_FAILURE);
          }
       }
+      //if rwlock necessary is WR
       if(mode == WR){
          if(pthread_rwlock_wrlock(&rwlock)){
             fprintf(stderr, "Error: Rwlock failed to lock\n");
@@ -136,20 +149,29 @@ void lock(int mode){
    }
 }
 
+/*
+ * Given a mode, this function unlocks the locked thread set earlier
+ * Input: lock mode
+ */
 void unlock(int mode){
-   if(lockType == NOSYNC) return;
-   if(mode == CMD){
+   //if there isnt syncronization
+   if(lockType == NOSYNC) return; 
+
+   //if lock is for the commands
+   if(mode == CMD){ 
       if(pthread_mutex_unlock(&commandLock)){
          fprintf(stderr, "Error: Mutex failed to unlock\n");
          exit(EXIT_FAILURE);
       }
    }
+   //if lock is mutex
    else if(lockType == MUTEX){
       if(pthread_mutex_unlock(&mutex)){
          fprintf(stderr, "Error: Mutex failed to unlock\n");
          exit(EXIT_FAILURE);
       }
    }
+   //if lock is rwlock
    else if(lockType == RWLOCK){
       if(pthread_rwlock_unlock(&rwlock)){
          fprintf(stderr, "Error: rwlock failed to unlock\n");
@@ -162,7 +184,7 @@ void *applyCommands(void*ptr){
    while (TRUE){
 
       lock(CMD);
-      if(numberCommands == 0){
+      if(numberCommands == 0){ //if command count is 0, thread should end
          unlock(CMD);
          break;
       }
@@ -171,7 +193,7 @@ void *applyCommands(void*ptr){
       lock(CMD);
       const char* command = removeCommand();
 
-      if (command == NULL){
+      if (command == NULL){ //if command is NULL, thread should end
          unlock(CMD);
          break;
       }
@@ -192,7 +214,7 @@ void *applyCommands(void*ptr){
             switch (type) {
                case 'f':
                   fprintf(stdout, "Create file: %s\n", name);
-                  lock(WR);
+                  lock(WR); 
                   create(name, T_FILE);
                   unlock(0);
                   break;
@@ -249,12 +271,14 @@ void argParse(int argc, char* argv[]){
    else if(!argv[4])
       fprintf(stderr, "Error: Synch method is NULL.\n");
    else {
-      numberThreads = atoi(argv[3]);
+      numberThreads = atoi(argv[3]);  //sets global var for the number of threads
 
-      if(!strcmp(argv[4], "mutex")) lockType = MUTEX;
-      else if(!strcmp(argv[4], "rwlock")) lockType = RWLOCK;
-      else if(!strcmp(argv[4], "nosync")){
-         if(numberThreads > 1){
+      if(!strcmp(argv[4], "mutex")) lockType = MUTEX;  //if sync type is mutex
+
+      else if(!strcmp(argv[4], "rwlock")) lockType = RWLOCK;  //if sync type is rwlock
+
+      else if(!strcmp(argv[4], "nosync")){  //if sync type is nosync, there cant be more than 1 thread
+         if(numberThreads > 1){ 
             fprintf(stderr, "Error: NoSync only available with 1 thread execution.\n");
             exit(EXIT_FAILURE);
          }
@@ -270,8 +294,10 @@ void argParse(int argc, char* argv[]){
 }
 
 void init_lock(){
-   if(lockType == NOSYNC) return;
-   if(lockType == MUTEX){
+   if(lockType == NOSYNC) return; //if locktype is nosync, no need to initialize lock
+
+   //if locktype is either mutex or rwlock, afterwards another mutex is initialized to acess the inputCommands vector
+   if(lockType == MUTEX){ 
       if(pthread_mutex_init(&mutex, NULL)){
          fprintf(stderr, "Error: Mutex failed to init\n");
          exit(EXIT_FAILURE);
@@ -290,7 +316,8 @@ void init_lock(){
 }
 
 void destroy_lock(){
-   if(lockType == NOSYNC) return;
+   if(lockType == NOSYNC) return; //if locktype is nosync, no need to destroy the lock
+
    if(lockType == MUTEX){
       if(pthread_mutex_destroy(&mutex)){
          fprintf(stderr, "Error: Failed destruction of mutex.\n");
