@@ -1,3 +1,10 @@
+/* 
+ * Primeiro exercicio do projeto de SO
+ * Made by:
+ * Duarte Jeremias, 96857
+ * Rodrigo Liu, 96909
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
