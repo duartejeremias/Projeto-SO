@@ -1,11 +1,14 @@
 # Projeto de Sistemas operativos
 
-## Primeira entrega: 17 de outubro, 12h00
+## <s> Primeira entrega: 17 de outubro, 12h00 </s>
+
+## Segunda entrega:  18 de novembro, 23h59
 
 ## To-do list
 
 - [x] criar repositorio;
 - [x] fazer ex1;
+- [ ] fazer ex2;
 - [ ] ...;
 
 ### Links de interesse
