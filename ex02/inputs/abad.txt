@@ -1,0 +1,5 @@
+c a d
+c b d
+c a/abad f
+m a/abad b
+m b/abad a

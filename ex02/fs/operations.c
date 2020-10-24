@@ -265,6 +265,57 @@ int lookup(char *name) {
 	return current_inumber;
 }
 
+/*
+ * Move directory or file
+ * Input:
+ *  - startDir: original path to the directory or file;
+ * 	- endDir: new path of the directory or file
+ * Returns:
+ *  - SUCCESS or FAIL
+ */
+int move(char *startDir, char *endDir){
+	int start_inumber, end_inumber;
+	type nType;
+	union Data data;
+
+	// checking if starting directory exists
+	if((start_inumber = lookup(startDir)) < 0){
+		fprintf(stderr, "Error: Directory/File does not exist.\n");
+		return FAIL;
+	}
+
+	// checking if end directory exists
+	if((end_inumber = lookup(endDir)) < 0){
+		fprintf(stderr, "Error: End path does not exist.\n");
+		return FAIL;
+	}
+
+	char *parentName, *childName;
+
+	inode_get(end_inumber, &nType, &data); // getting the endPath directory contents
+	split_parent_child_from_path(startDir, &parentName, &childName);
+
+	// if directory/file to be moved already exists in the end path contents
+	if(lookup_sub_node(childName, data.dirEntries) >= 0){
+		fprintf(stderr, "Error: Directory/File already exists in end path.\n");
+		return FAIL;
+	}
+
+	// remove directory/file from original path
+	if(dir_reset_entry(lookup(parentName), start_inumber) == FAIL){
+		fprintf(stderr, "Error: Could not remove inode from orinal path.\n");
+		return FAIL;
+	}
+
+	// add directory/file to new path
+	if(dir_add_entry(end_inumber, start_inumber, childName) == FAIL){
+		fprintf(stderr, "Error: Could not insert inode in new path.\n");
+		return FAIL;
+	}
+
+	return SUCCESS;
+}
+
 
 /*
  * Prints tecnicofs tree.

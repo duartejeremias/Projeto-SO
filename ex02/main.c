@@ -61,56 +61,63 @@ void errorParse(){
 }
 
 void processInput(char *inputFileName){
-    char line[MAX_INPUT_SIZE];
-    FILE *inputFile = fopen(inputFileName, "r");
+   char line[MAX_INPUT_SIZE];
+   FILE *inputFile = fopen(inputFileName, "r");
 
-    if(inputFile == NULL){
+   if(inputFile == NULL){
       fprintf(stderr, "Error: file %s does not exist\n", inputFileName);
       return;
-    }
+   }
 
-    /* break loop with ^Z or ^D */
-    while (fgets(line, sizeof(line)/sizeof(char), inputFile)) {
-        char token, type;
-        char name[MAX_INPUT_SIZE];
+   /* break loop with ^Z or ^D */
+   while (fgets(line, sizeof(line)/sizeof(char), inputFile)) {
+      char token, type[MAX_INPUT_SIZE];
+      char name[MAX_INPUT_SIZE];
 
-        int numTokens = sscanf(line, "%c %s %c", &token, name, &type);
+      int numTokens = sscanf(line, "%c %s %s", &token, name, type);
 
-        /* perform minimal validation */
-        if (numTokens < 1) {
-            continue;
-        }
-        switch (token) {
-            case 'c':
-                if(numTokens != 3)
-                    errorParse();
-                if(insertCommand(line))
-                    break;
-                return;
+      /* perform minimal validation */
+      if (numTokens < 1) {
+         continue;
+      }
+      switch (token) {
+         case 'c':
+            if(numTokens != 3)
+               errorParse();
+            if(insertCommand(line))
+               break;
+            return;
 
-            case 'l':
-                if(numTokens != 2)
-                    errorParse();
-                if(insertCommand(line))
-                    break;
-                return;
+         case 'l':
+            if(numTokens != 2)
+               errorParse();
+            if(insertCommand(line))
+               break;
+            return;
 
-            case 'd':
-                if(numTokens != 2)
-                    errorParse();
-                if(insertCommand(line))
-                    break;
-                return;
+         case 'm':
+            if(numTokens != 3)
+               errorParse();
+            if(insertCommand(line))
+               break;
+            return;
 
-            case '#':
-                break;
+         case 'd':
+            if(numTokens != 2)
+               errorParse();
+            if(insertCommand(line))
+               break;
+            return;
 
-            default: { /* error */
-                errorParse();
-            }
-        }
-    }
-    fclose(inputFile);
+         case '#':
+            break;
+
+         default: { /* error */
+            errorParse();
+         }
+      }
+   }
+   fclose(inputFile);
 }
 
 /*
@@ -207,9 +214,9 @@ void *applyCommands(void*ptr){
       unlock(CMD);
 
 
-      char token, type;
+      char token, type[MAX_INPUT_SIZE];
       char name[MAX_INPUT_SIZE];
-      int numTokens = sscanf(command, "%c %s %c", &token, name, &type);
+      int numTokens = sscanf(command, "%c %s %c", &token, name, type);
       if (numTokens < 2) {
          fprintf(stderr, "Error: invalid command in Queue\n");
          exit(EXIT_FAILURE);
@@ -218,7 +225,7 @@ void *applyCommands(void*ptr){
       int searchResult;
       switch (token) {
          case 'c':
-            switch (type) {
+            switch (type[0]) {
                case 'f':
                   fprintf(stdout, "Create file: %s\n", name);
                   lock(WR); 
@@ -253,6 +260,14 @@ void *applyCommands(void*ptr){
             delete(name);
             unlock(0);
             break;
+
+         case 'm':
+            fprintf(stdout, "Move: %s to %s\n", name, type);
+            lock(WR);
+            move(name, type);
+            unlock(0);
+            break;
+
          default: { /* error */
             fprintf(stderr, "Error: command to apply\n");
             exit(EXIT_FAILURE);

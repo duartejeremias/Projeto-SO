@@ -1,6 +1,6 @@
 # SO Project 2020-21
 
-## Exercise 2 base code.
+## Exercise 2 base code
 
 ## Pseudocodigo/alteracoes a fazer
 
