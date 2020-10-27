@@ -216,7 +216,7 @@ void *applyCommands(void*ptr){
 
       char token, type[MAX_INPUT_SIZE];
       char name[MAX_INPUT_SIZE];
-      int numTokens = sscanf(command, "%c %s %c", &token, name, type);
+      int numTokens = sscanf(command, "%c %s %s", &token, name, type);
       if (numTokens < 2) {
          fprintf(stderr, "Error: invalid command in Queue\n");
          exit(EXIT_FAILURE);
@@ -262,7 +262,7 @@ void *applyCommands(void*ptr){
             break;
 
          case 'm':
-            fprintf(stdout, "Move: %s to %s\n", name, type);
+            fprintf(stdout, "Move: %s to %s\n", name, type);   
             lock(WR);
             move(name, type);
             unlock(0);

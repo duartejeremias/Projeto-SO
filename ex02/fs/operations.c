@@ -277,38 +277,39 @@ int move(char *startDir, char *endDir){
 	int start_inumber, end_inumber;
 	type nType;
 	union Data data;
+	char *startParentName, *startChildName;
+	char *endParentName, *endChildName;
 
-	// checking if starting directory exists
+	// checking if directory/file exists
 	if((start_inumber = lookup(startDir)) < 0){
 		fprintf(stderr, "Error: Directory/File does not exist.\n");
 		return FAIL;
 	}
 
+	split_parent_child_from_path(endDir, &endParentName, &endChildName);
 	// checking if end directory exists
-	if((end_inumber = lookup(endDir)) < 0){
+	if((end_inumber = lookup(endParentName)) < 0){
 		fprintf(stderr, "Error: End path does not exist.\n");
 		return FAIL;
 	}
 
-	char *parentName, *childName;
-
 	inode_get(end_inumber, &nType, &data); // getting the endPath directory contents
-	split_parent_child_from_path(startDir, &parentName, &childName);
+	split_parent_child_from_path(startDir, &startParentName, &startChildName);
 
 	// if directory/file to be moved already exists in the end path contents
-	if(lookup_sub_node(childName, data.dirEntries) >= 0){
+	if(lookup_sub_node(endChildName, data.dirEntries) >= 0){
 		fprintf(stderr, "Error: Directory/File already exists in end path.\n");
 		return FAIL;
 	}
 
 	// remove directory/file from original path
-	if(dir_reset_entry(lookup(parentName), start_inumber) == FAIL){
+	if(dir_reset_entry(lookup(startParentName), start_inumber) == FAIL){
 		fprintf(stderr, "Error: Could not remove inode from orinal path.\n");
 		return FAIL;
 	}
 
 	// add directory/file to new path
-	if(dir_add_entry(end_inumber, start_inumber, childName) == FAIL){
+	if(dir_add_entry(lookup(endParentName), start_inumber, endChildName) == FAIL){
 		fprintf(stderr, "Error: Could not insert inode in new path.\n");
 		return FAIL;
 	}

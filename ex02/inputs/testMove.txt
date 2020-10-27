@@ -1,0 +1,8 @@
+c dirA d
+c dirB d
+c dirA/f1.txt f 
+c f2.txt f
+m dirA/f1.txt dirB/f1_movido.txt
+m f2.txt dirA/f2_movido.txt
+m f2.txt dirA/f22.txt 
+m dirB/f1_movido.txt dirC/f3.txt
