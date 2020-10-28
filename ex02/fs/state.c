@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "state.h"
 #include "../tecnicofs-api-constants.h"
 
@@ -36,8 +37,8 @@ void inode_table_destroy() {
         if (inode_table[i].nodeType != T_NONE) {
             /* as data is an union, the same pointer is used for both dirEntries and fileContents */
             /* just release one of them */
-	  if (inode_table[i].data.dirEntries)
-            free(inode_table[i].data.dirEntries);
+	        if (inode_table[i].data.dirEntries)
+                free(inode_table[i].data.dirEntries);
         }
     }
 }
@@ -69,6 +70,11 @@ int inode_create(type nType) {
             else {
                 inode_table[inumber].data.fileContents = NULL;
             }
+            
+            if(pthread_rwlock_init(&inode_table[inumber].rwlock, NULL)){
+                fprintf(stderr, "Error: Could not initialize rwlock.\n");
+                exit(EXIT_FAILURE);
+            }
             return inumber;
         }
     }
@@ -94,6 +100,11 @@ int inode_delete(int inumber) {
     /* see inode_table_destroy function */
     if (inode_table[inumber].data.dirEntries)
         free(inode_table[inumber].data.dirEntries);
+
+    if(pthread_rwlock_unlock(&inode_table[inumber].rwlock) || pthread_rwlock_destroy(&inode_table[inumber].rwlock)){
+        fprintf(stderr, "Error: Could not destroy rwlock.\n");
+        exit(EXIT_FAILURE);
+    }
     return SUCCESS;
 }
 
@@ -230,5 +241,42 @@ void inode_print_tree(FILE *fp, int inumber, char *name) {
                 inode_print_tree(fp, inode_table[inumber].data.dirEntries[i].inumber, path);
             }
         }
+    }
+}
+
+/*
+ * Locks a inode.
+ * Input:
+ *   - inumber: identifier of the inode
+ *   - mode: arbitrary integer to select lock type
+ */
+void inode_lock(int inumber, int mode){
+    if(mode == WR){
+        if(pthread_rwlock_wrlock(&inode_table[inumber].rwlock)){
+            fprintf(stderr, "Error: Could not lock with wr.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if(mode == RD){
+        if(pthread_rwlock_rdlock(&inode_table[inumber].rwlock)){
+            fprintf(stderr, "Error: Could not lock with rd.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else {
+        fprintf(stderr, "Error: Invalid lock mode.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+/*
+ * Unlocks a inode.
+ * Input:
+ *   - inumber: identifier of the inode
+ */
+void inode_unlock(int inumber) {
+    if(pthread_rwlock_unlock(&inode_table[inumber].rwlock)){
+        fprintf(stderr, "Error: Could not unlock rwlock.\n");
+        exit(EXIT_FAILURE);
     }
 }

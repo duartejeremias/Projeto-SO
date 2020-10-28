@@ -34,6 +34,6 @@ for testFile in $inputdir/*.txt; do
 
     echo "-----------------------------------------------------"
     echo -e "InputFile=$(basename $testFile) NumThreads=$randomThreads\n"
-    ./tecnicofs $testFile $outputdir/$fileName-$randomThreads.txt $randomThreads rwlock
+    ./tecnicofs $testFile $outputdir/$fileName-$randomThreads.txt $randomThreads
     
 done

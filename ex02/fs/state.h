@@ -17,6 +17,8 @@
 
 #define DELAY 5000
 
+#define WR 1
+#define RD 2
 
 /*
  * Contains the name of the entry and respective i-number
@@ -40,6 +42,7 @@ union Data {
 typedef struct inode_t {    
 	type nodeType;
 	union Data data;
+	pthread_rwlock_t rwlock;
     /* more i-node attributes will be added in future exercises */
 } inode_t;
 
@@ -54,6 +57,7 @@ int inode_set_file(int inumber, char *fileContents, int len);
 int dir_reset_entry(int inumber, int sub_inumber);
 int dir_add_entry(int inumber, int sub_inumber, char *sub_name);
 void inode_print_tree(FILE *fp, int inumber, char *name);
-
+void inode_lock(int inumber, int mode);
+void inode_unlock(int inumber);
 
 #endif /* INODES_H */

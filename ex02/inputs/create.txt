@@ -1,0 +1,58 @@
+c dirA d
+c dirB d
+c dirC d
+c dirD d
+c dirA/f1.txt f
+c dirA/dir1 d
+c dirC/dir2 d
+c dirC/dir2/f2.txt f
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
+l dirA
+l dirC/dir2/f2.txt
+l dirA/f1.txt
+l dirA/dir1
+l dirB
