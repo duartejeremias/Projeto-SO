@@ -17,6 +17,6 @@ int move(char *startDir, char *endDir, lockArray *threadLocks);
 void print_tecnicofs_tree(char *fileName);
 void lock(int inumber, lockArray *threadLocks, int mode);
 void unlock(lockArray *threadLocks);
-int wrlock_path(char *name, char *parent, lockArray *threadLocks);
+int lock_path(char *name, char *parent, lockArray *threadLocks);
 
 #endif /* FS_H */

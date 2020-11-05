@@ -25,6 +25,10 @@ void inode_table_init() {
         inode_table[i].nodeType = T_NONE;
         inode_table[i].data.dirEntries = NULL;
         inode_table[i].data.fileContents = NULL;
+        if(pthread_rwlock_init(&inode_table[i].rwlock, NULL)){
+            fprintf(stderr, "Error: Could not initialize rwlock.\n");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -39,6 +43,10 @@ void inode_table_destroy() {
             /* just release one of them */
 	        if (inode_table[i].data.dirEntries)
                 free(inode_table[i].data.dirEntries);
+            if(pthread_rwlock_destroy(&inode_table[i].rwlock)){
+                fprintf(stderr, "Error: Could not destroy rwlock.\n");
+                exit(EXIT_FAILURE);
+            }
         }
     }
 }
@@ -71,10 +79,6 @@ int inode_create(type nType) {
                 inode_table[inumber].data.fileContents = NULL;
             }
             
-            if(pthread_rwlock_init(&inode_table[inumber].rwlock, NULL)){
-                fprintf(stderr, "Error: Could not initialize rwlock.\n");
-                exit(EXIT_FAILURE);
-            }
             return inumber;
         }
     }
@@ -100,11 +104,6 @@ int inode_delete(int inumber) {
     /* see inode_table_destroy function */
     if (inode_table[inumber].data.dirEntries)
         free(inode_table[inumber].data.dirEntries);
-
-    if(pthread_rwlock_unlock(&inode_table[inumber].rwlock) || pthread_rwlock_destroy(&inode_table[inumber].rwlock)){
-        fprintf(stderr, "Error: Could not destroy rwlock.\n");
-        exit(EXIT_FAILURE);
-    }
     return SUCCESS;
 }
 

@@ -32,8 +32,8 @@ for testFile in $inputdir/*.txt; do
 
     fileName=$(basename $testFile .txt)
 
-    echo "-----------------------------------------------------"
-    echo -e "InputFile=$(basename $testFile) NumThreads=$randomThreads\n"
-    ./tecnicofs $testFile $outputdir/$fileName-$randomThreads.txt $randomThreads
+    echo -e "InputFile=$(basename $testFile) NumThreads=$randomThreads"
+    ./tecnicofs $testFile $outputdir/$fileName-$randomThreads.txt $randomThreads &> /dev/null
+    grep 'completed' $outputdir/$fileName-$randomThreads.txt
     
 done

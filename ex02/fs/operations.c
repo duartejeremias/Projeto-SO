@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define TRUE 1
+#define FALSE 0
+
 /* Given a path, fills pointers with strings for the parent path and child
  * file name
  * Input:
@@ -123,14 +126,15 @@ int create(char *name, type nodeType, lockArray *threadLocks){
 
 	strcpy(name_copy, name);
 	split_parent_child_from_path(name_copy, &parent_name, &child_name);
+	/* use for copy */
 	parent_copy = malloc(sizeof(char) * strlen(parent_name));
 
-	if(*parent_name == FS_ROOT){
+	if(*parent_name == FS_ROOT){ // if parent directory corresponds to the root
 		parent_inumber = FS_ROOT;
 	} else {
-		strcpy(parent_copy, parent_name);
-		split_parent_child_from_path(parent_copy, &buf, &buf2);
-		parent_inumber = wrlock_path(parent_name, buf2, threadLocks);
+		strcpy(parent_copy, parent_name); // copies parent path
+		split_parent_child_from_path(parent_copy, &buf, &buf2); // gets parent dir name (buf2)
+		parent_inumber = lock_path(parent_name, buf2, threadLocks); // locks the path up to the parent dir, while returning its parent inumber
 	}
 	free(parent_copy);
 	
@@ -141,7 +145,7 @@ int create(char *name, type nodeType, lockArray *threadLocks){
 		return FAIL;
 	}
 	
-	lock(parent_inumber, threadLocks, WR);
+	lock(parent_inumber, threadLocks, WR); //locks with wr
 	inode_get(parent_inumber, &pType, &pdata);
 	
 	if(pType != T_DIRECTORY) {
@@ -160,7 +164,7 @@ int create(char *name, type nodeType, lockArray *threadLocks){
 	
 	/* create node and add entry to folder that contains new node */
 	child_inumber = inode_create(nodeType);
-	lock(child_inumber, threadLocks, WR);
+	lock(child_inumber, threadLocks, WR); //locks with wr
 
 	if (child_inumber == FAIL) {
 		printf("failed to create %s in  %s, couldn't allocate inode\n",
@@ -198,14 +202,15 @@ int delete(char *name, lockArray *threadLocks){
 
 	strcpy(name_copy, name);
 	split_parent_child_from_path(name_copy, &parent_name, &child_name);
+	/* use for copy */
 	parent_copy = malloc(sizeof(char) * strlen(parent_name));
 
-	if(*parent_name == FS_ROOT){
+	if(*parent_name == FS_ROOT){ // if parent directory corresponds to the root
 		parent_inumber = FS_ROOT;
 	} else {
-		strcpy(parent_copy, parent_name);
-		split_parent_child_from_path(parent_copy, &buf, &buf2);
-		parent_inumber = wrlock_path(parent_name, buf2, threadLocks);
+		strcpy(parent_copy, parent_name); // copies parent path
+		split_parent_child_from_path(parent_copy, &buf, &buf2); // gets parent dir name (buf2)
+		parent_inumber = lock_path(parent_name, buf2, threadLocks);  // locks the path up to the parent dir, while returning its parent inumber
 	}
 	free(parent_copy);
 
@@ -216,7 +221,7 @@ int delete(char *name, lockArray *threadLocks){
 		return FAIL;
 	}
 
-	lock(parent_inumber, threadLocks, WR);
+	lock(parent_inumber, threadLocks, WR);  //locks with wr
 	inode_get(parent_inumber, &pType, &pdata);
 
 	if(pType != T_DIRECTORY) {
@@ -235,7 +240,7 @@ int delete(char *name, lockArray *threadLocks){
 		return FAIL;
 	}
 
-	lock(child_inumber, threadLocks, WR);
+	lock(child_inumber, threadLocks, WR); //locks with wr
 	inode_get(child_inumber, &cType, &cdata);
 
 	if (cType == T_DIRECTORY && is_dir_empty(cdata.dirEntries) == FAIL) {
@@ -318,9 +323,9 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
 	char *startParentName, *startChildName;
 	char *endParentName, *endChildName;
 
-	// checking if directory/file exists
+	// checking if file exists
 	if((start_inumber = lookup(startDir, threadLocks)) < 0){
-		fprintf(stderr, "Error: Directory/File does not exist.\n");
+		fprintf(stderr, "Error: File does not exist.\n");
 		return FAIL;
 	}
 
@@ -334,20 +339,22 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
 	inode_get(end_inumber, &nType, &data); // getting the endPath directory contents
 	split_parent_child_from_path(startDir, &startParentName, &startChildName);
 
-	// if directory/file to be moved already exists in the end path contents
+	// if file to be moved already exists in the end path contents
 	if(lookup_sub_node(endChildName, data.dirEntries) >= 0){
-		fprintf(stderr, "Error: Directory/File already exists in end path.\n");
+		fprintf(stderr, "Error: File already exists in end path.\n");
 		return FAIL;
 	}
 
-	// remove directory/file from original path
-	if(dir_reset_entry(lookup(startParentName, threadLocks), start_inumber) == FAIL){
+	// remove file from original path
+	int parent_inumber = lookup(startParentName, threadLocks);
+	if(dir_reset_entry(parent_inumber, start_inumber) == FAIL){
 		fprintf(stderr, "Error: Could not remove inode from orinal path.\n");
 		return FAIL;
 	}
 
 	// add directory/file to new path
-	if(dir_add_entry(lookup(endParentName, threadLocks), start_inumber, endChildName) == FAIL){
+	int end_parent_inumber = lookup(endParentName, threadLocks);
+	if(dir_add_entry(end_parent_inumber, start_inumber, endChildName) == FAIL){
 		fprintf(stderr, "Error: Could not insert inode in new path.\n");
 		return FAIL;
 	}
@@ -366,12 +373,24 @@ void print_tecnicofs_tree(char *fileName){
 	fclose(outputFile);
 }
 
+/*
+ * Locks the inode corresponding to inumber
+ * Input:
+ *  - inumber: integer corresponding to the inumber
+ *  - threadLocks: the array of locks of the thread
+ *  - mode: arbitray integer corresponding to lock mode (RD or WR)  
+ */
 void lock(int inumber, lockArray *threadLocks, int mode){
 	inode_lock(inumber, mode);
 	threadLocks->lock[threadLocks->lockCount] = inumber;
 	threadLocks->lockCount++;
 }
 
+/*
+ * Unlocks an array of locks
+ * Input:
+ *  - threadLocks: the array of locks of the thread
+ */
 void unlock(lockArray *threadLocks) {
 	for(int i = 0; i < threadLocks->lockCount; i++){
 		inode_unlock(threadLocks->lock[i]);
@@ -379,8 +398,14 @@ void unlock(lockArray *threadLocks) {
 	threadLocks->lockCount = 0;
 }
 
-
-int wrlock_path(char *name, char *parent, lockArray *threadLocks){
+/*
+ * Iterates through a given path while locking the nodes
+ * Input:
+ *  - name: original path
+ *  - threadLocks: the array of locks of the thread
+ *  - parent: name of the folder where memory is going to be written
+ */
+int lock_path(char *name, char *parent, lockArray *threadLocks){
 	char full_path[MAX_FILE_NAME];
 	char delim[] = "/";
 
@@ -394,15 +419,16 @@ int wrlock_path(char *name, char *parent, lockArray *threadLocks){
 	union Data data;
 	
 	/* get root inode data */
-	lock(current_inumber, threadLocks, RD);
+	lock(current_inumber, threadLocks, RD); // locks
 	inode_get(current_inumber, &nType, &data);
 
 	char *saveptr;
 	char *path = strtok_r(full_path, delim, &saveptr);
 	/* search for all sub nodes */
 	while (path != NULL && (current_inumber = lookup_sub_node(path, data.dirEntries)) != FAIL) {
+		// if path has reached parent directory 
 		if(strcmp(path, parent) == 0){
-			return current_inumber;
+			return current_inumber; //returns its inumber
 		}
 		lock(current_inumber, threadLocks, RD);
 		inode_get(current_inumber, &nType, &data);
