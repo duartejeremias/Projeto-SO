@@ -297,8 +297,6 @@ int main(int argc, char* argv[]) {
       }
    }
 
-   //processInput(argv[1]);
-
    if(pthread_join(threadProd, NULL)){
       fprintf(stderr, "Error: thread merging failed.\n");
       exit(EXIT_FAILURE);
@@ -310,14 +308,12 @@ int main(int argc, char* argv[]) {
       }
    }
    
-   print_tecnicofs_tree(argv[2]);
-
    gettimeofday(&endTime, NULL);
 
+   print_tecnicofs_tree(argv[2], startTime, endTime);
+   
    /* release allocated memory */
    destroy_fs();
-
-   fprintf(stdout, "TecnicoFS completed in %.4f seconds.\n", (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec) / 1e6);
-
+   
    exit(EXIT_SUCCESS);
 }

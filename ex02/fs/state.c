@@ -258,7 +258,26 @@ void inode_lock(int inumber, int mode){
     }
     else if(mode == RD){
         if(pthread_rwlock_rdlock(&inode_table[inumber].rwlock)){
-            fprintf(stderr, "Error: Could not lock with rd.\n");
+            fprintf(stderr, "Error: Could not lock %d with rd.\n", inumber);
+            exit(EXIT_FAILURE);
+        }
+    }
+    else {
+        fprintf(stderr, "Error: Invalid lock mode.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void inode_trylock(int inumber, int mode) {
+    if(mode == WR){
+        if(pthread_rwlock_trywrlock(&inode_table[inumber].rwlock)){
+            fprintf(stderr, "Error: Could not trylock with wr.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if(mode == RD){
+        if(pthread_rwlock_tryrdlock(&inode_table[inumber].rwlock)){
+            fprintf(stderr, "Error: Could not trylock with rd.\n");
             exit(EXIT_FAILURE);
         }
     }

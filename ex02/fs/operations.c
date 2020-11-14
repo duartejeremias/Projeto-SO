@@ -317,47 +317,85 @@ int lookup(char *name, lockArray *threadLocks) {
  *  - SUCCESS or FAIL
  */
 int move(char *startDir, char *endDir, lockArray *threadLocks){
-	int start_inumber, end_inumber;
+	int start_parent_inumber, start_child_inumber, end_parent_inumber;
 	type nType;
 	union Data data;
+	char copy[MAX_FILE_NAME];
 	char *startParentName, *startChildName;
 	char *endParentName, *endChildName;
+	char *buf, *buf2;
 
 	// checking if file exists
-	if((start_inumber = lookup(startDir, threadLocks)) < 0){
-		fprintf(stderr, "Error: File does not exist.\n");
-		return FAIL;
-	}
-
-	split_parent_child_from_path(endDir, &endParentName, &endChildName);
-	// checking if end directory exists
-	if((end_inumber = lookup(endParentName, threadLocks)) < 0){
-		fprintf(stderr, "Error: End path does not exist.\n");
-		return FAIL;
-	}
-
-	inode_get(end_inumber, &nType, &data); // getting the endPath directory contents
 	split_parent_child_from_path(startDir, &startParentName, &startChildName);
+	if(*startParentName == FS_ROOT) {
+		start_parent_inumber = FS_ROOT;
+	} else {
+		strcpy(copy, startParentName);
+		split_parent_child_from_path(copy, &buf, &buf2);
+		start_parent_inumber = lock_path(startParentName, buf2, threadLocks);
+	}
+	
+	if(start_parent_inumber == FAIL) {
+		fprintf(stderr, "Error: starting directory does not exist.\n");
+		unlock(threadLocks);
+		return FAIL;
+	}
+
+	try_lock(start_parent_inumber, threadLocks, WR);
+
+	inode_get(start_parent_inumber, &nType, &data);
+	start_child_inumber = lookup_sub_node(startChildName, data.dirEntries);
+
+	if(start_child_inumber == FAIL){
+		fprintf(stderr, "Error: File doesnt exist in start path.\n");
+		unlock(threadLocks);
+		return FAIL;
+	}
+
+	try_lock(start_child_inumber, threadLocks, WR);
+
+	// checking if end directory exists
+	split_parent_child_from_path(endDir, &endParentName, &endChildName);
+	if(*endParentName == FS_ROOT) {
+		end_parent_inumber = FS_ROOT;
+	} else {
+		strcpy(copy, endParentName);
+		split_parent_child_from_path(copy, &buf, &buf2);
+		end_parent_inumber = lock_path(endParentName, buf2, threadLocks);
+	}
+	// checking if end directory exists
+	if(end_parent_inumber == FAIL){
+		fprintf(stderr, "Error: End path does not exist.\n");
+		unlock(threadLocks);
+		return FAIL;
+	}
+
+	try_lock(end_parent_inumber, threadLocks, WR);
+
+	inode_get(end_parent_inumber, &nType, &data); // getting the endPath directory contents
 
 	// if file to be moved already exists in the end path contents
 	if(lookup_sub_node(endChildName, data.dirEntries) >= 0){
 		fprintf(stderr, "Error: File already exists in end path.\n");
+		unlock(threadLocks);
 		return FAIL;
 	}
 
 	// remove file from original path
-	int parent_inumber = lookup(startParentName, threadLocks);
-	if(dir_reset_entry(parent_inumber, start_inumber) == FAIL){
+	if(dir_reset_entry(start_parent_inumber, start_child_inumber) == FAIL){
 		fprintf(stderr, "Error: Could not remove inode from orinal path.\n");
+		unlock(threadLocks);
 		return FAIL;
 	}
 
 	// add directory/file to new path
-	int end_parent_inumber = lookup(endParentName, threadLocks);
-	if(dir_add_entry(end_parent_inumber, start_inumber, endChildName) == FAIL){
+	if(dir_add_entry(end_parent_inumber, start_child_inumber, endChildName) == FAIL){
 		fprintf(stderr, "Error: Could not insert inode in new path.\n");
+		unlock(threadLocks);
 		return FAIL;
 	}
+
+	unlock(threadLocks);
 
 	return SUCCESS;
 }
@@ -367,9 +405,10 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
  * Input:
  *  - fp: pointer to output file
  */
-void print_tecnicofs_tree(char *fileName){
+void print_tecnicofs_tree(char *fileName, struct timeval startTime, struct timeval endTime){
 	FILE *outputFile = fopen(fileName, "w");
 	inode_print_tree(outputFile, FS_ROOT, "");
+	fprintf(outputFile, "TecnicoFS completed in %.4f seconds.\n", (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec) / 1e6);
 	fclose(outputFile);
 }
 
@@ -382,6 +421,12 @@ void print_tecnicofs_tree(char *fileName){
  */
 void lock(int inumber, lockArray *threadLocks, int mode){
 	inode_lock(inumber, mode);
+	threadLocks->lock[threadLocks->lockCount] = inumber;
+	threadLocks->lockCount++;
+}
+
+void try_lock(int inumber, lockArray *threadLocks, int mode){
+	inode_trylock(inumber, mode);
 	threadLocks->lock[threadLocks->lockCount] = inumber;
 	threadLocks->lockCount++;
 }
