@@ -45,7 +45,7 @@
 
 * Devemos alterar o tempo de execucao, este devera comecar antes do carregamento de comandos comecar/.
 
-### <s> 3.Nova op: mover ficheiro ou diretoria </s>
+### 3.Nova op: mover ficheiro ou diretoria 
 
 * Devemos implementar uma nova op (m);
 
