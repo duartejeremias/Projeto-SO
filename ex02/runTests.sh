@@ -25,14 +25,16 @@ then
     exit 1
 fi
 
+echo "-------------------------------------------------------"
+
 for testFile in $inputdir/*.txt; do
     
     for ((x = 1; x <= maxthreads; x++)) ; do
+        echo
         fileName=$(basename $testFile .txt)
         echo -e "InputFile=$(basename $testFile) NumThreads=$x"
-        ./tecnicofs $testFile $outputdir/$fileName-$x.txt $x &> /dev/null
-        grep 'completed' $outputdir/$fileName-$x.txt
+        ./tecnicofs $testFile $outputdir/$fileName-$x.txt $x 2> /dev/null | grep "completed"
         echo
     done
-    
+    echo "-------------------------------------------------------"
 done

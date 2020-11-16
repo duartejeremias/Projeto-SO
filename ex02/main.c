@@ -49,7 +49,7 @@ char* removeCommand() {
       
       int i = headQueue;
       if(strcmp(inputCommands[i], "quit") == 0){
-         return inputCommands[i];
+         return NULL;
       }
       existingCommands--;
       headQueue++;
@@ -60,8 +60,8 @@ char* removeCommand() {
    return NULL;
 }
 
-void errorParse(){
-   fprintf(stderr, "Error: command invalid\n");
+void errorParse(char *errorMessage){
+   fprintf(stderr, "%s\n", errorMessage);
    exit(EXIT_FAILURE);
 }
 
@@ -70,44 +70,38 @@ void *processInput(void *ptr){
    char line[MAX_INPUT_SIZE];
    FILE *inputFile = fopen(inputFileName, "r");
 
-   if(inputFile == NULL){
-      fprintf(stderr, "Error: file %s does not exist\n", inputFileName);
-      exit(EXIT_FAILURE);
-   }
+   if(inputFile == NULL) 
+      errorParse("Error: Input file does not exist");
+
+   char token, type[MAX_INPUT_SIZE];
+   char name[MAX_INPUT_SIZE];
 
    /* break loop with ^Z or ^D */
    while (TRUE) {
-      char token, type[MAX_INPUT_SIZE];
-      char name[MAX_INPUT_SIZE];
+      
       char *end = fgets(line, sizeof(line)/sizeof(char), inputFile);
       int numTokens = sscanf(line, "%c %s %s", &token, name, type);
 
-      if(pthread_mutex_lock(&mutex)){
-         fprintf(stderr, "Error: Producer thread lock failed\n");
-         exit(EXIT_FAILURE);
-      }
+      if(pthread_mutex_lock(&mutex)) 
+         errorParse("Error: Producer thread lock failed");
 
-      while(!(existingCommands < MAX_COMMANDS)){
-         if(pthread_cond_wait(&podeProd, &mutex)){
-            fprintf(stderr, "Error: Producer thread waiting failed\n");
-            exit(EXIT_FAILURE);
-         }
-      } 
+      while(!(existingCommands < MAX_COMMANDS))
+         if(pthread_cond_wait(&podeProd, &mutex)) 
+            errorParse("Error: Producer thread waiting failed");
+      
 
       if(end == NULL || *end == EOF){
          insertCommand("quit");
-         if(pthread_mutex_unlock(&mutex)){
-            fprintf(stderr, "Error: Producer thread unlock failed\n");
-            exit(EXIT_FAILURE);
-         }
-         return NULL;
+         if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)) 
+            errorParse("Error: Producer thread unlock/signal failed");
+         break;
       }
       
       switch (token) {
          case 'c':
             if(numTokens != 3){
                fclose(inputFile);
-               errorParse();
+               errorParse("Error: command invalid");
             }
             if(insertCommand(line))
                break;
@@ -115,7 +109,7 @@ void *processInput(void *ptr){
          case 'l':
             if(numTokens != 2){
                fclose(inputFile);
-               errorParse();
+               errorParse("Error: command invalid");
             }
             if(insertCommand(line))
                break;
@@ -123,7 +117,7 @@ void *processInput(void *ptr){
          case 'm':
             if(numTokens != 3){
                fclose(inputFile);
-               errorParse();
+               errorParse("Error: command invalid");
             }
             if(insertCommand(line))
                break;
@@ -131,7 +125,7 @@ void *processInput(void *ptr){
          case 'd':
             if(numTokens != 2){
                fclose(inputFile);
-               errorParse();
+               errorParse("Error: command invalid");
             }
             if(insertCommand(line))
                break;
@@ -141,14 +135,12 @@ void *processInput(void *ptr){
 
          default: { /* error */
             fclose(inputFile);
-            errorParse();
+            errorParse("Error: command invalid");
          }
       }
 
-      if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)){
-         fprintf(stderr, "Error: Producer thread unlocking/signal failed\n");
-         exit(EXIT_FAILURE);
-      }
+      if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)) 
+         errorParse("Error: Producer thread unlocking/signal failed");
    }
 
    fclose(inputFile);
@@ -157,48 +149,45 @@ void *processInput(void *ptr){
 
 void *applyCommands(void*ptr){
    lockArray *threadLocks = (lockArray *) ptr;
+
+   char token, node;
+   char name[MAX_INPUT_SIZE], endName[MAX_INPUT_SIZE];
+   
    while (TRUE){
 
-      if(pthread_mutex_lock(&mutex)){
-         fprintf(stderr, "Error: Consumer thread lock failed\n");
-         exit(EXIT_FAILURE);
-      }
+      if(pthread_mutex_lock(&mutex))
+         errorParse("Error: Consumer thread lock failed");
 
       while(!(existingCommands > 0)){
-         if(pthread_cond_wait(&podeCons, &mutex)){
-            fprintf(stderr, "Error: Consumer thread wait failed\n");
-            exit(EXIT_FAILURE);
-         }
+         if(pthread_cond_wait(&podeCons, &mutex))
+            errorParse("Error: Consumer thread wait failed");
       } 
 
       const char* command = removeCommand();
-      
 
-      if(pthread_cond_signal(&podeProd) || pthread_mutex_unlock(&mutex)){
-         fprintf(stderr, "Error: Consumer thread unlocking/signal failed\n");
-         exit(EXIT_FAILURE);
-      }
-      
-      if(strcmp(command, "quit") == 0){
-         if(pthread_mutex_unlock(&mutex)){
-            fprintf(stderr, "Error: Consumer thread lock failed\n");
-            exit(EXIT_FAILURE);
-         }
-         return NULL;
-      }
+      int numTokens;
 
-      char token, type[MAX_INPUT_SIZE];
-      char name[MAX_INPUT_SIZE];
-      int numTokens = sscanf(command, "%c %s %s", &token, name, type);
-      if (numTokens < 2) {
-         fprintf(stderr, "Error: invalid command in Queue\n");
-         exit(EXIT_FAILURE);
+      if(command == NULL){
+         numTokens = 2;
+         token = 'q';
       }
+      else if(command[0] == 'c')
+         numTokens = sscanf(command, "%c %s %c", &token, name, &node);
+      else if(command[0] == 'm')
+         numTokens = sscanf(command, "%c %s %s", &token, name, endName);
+      else 
+         numTokens = sscanf(command, "%c %s", &token, name);
+
+      if (numTokens < 2) 
+         errorParse("Error: invalid command in Queue");
+
+      if(pthread_cond_signal(&podeProd) || pthread_mutex_unlock(&mutex))
+         errorParse("Error: Consumer thread unlocking/signal failed");
 
       int searchResult;
       switch (token) {
          case 'c':
-            switch (type[0]) {
+            switch (node) {
                case 'f':
                   fprintf(stdout, "Create file: %s\n", name);
                   create(name, T_FILE, threadLocks);
@@ -208,8 +197,7 @@ void *applyCommands(void*ptr){
                   create(name, T_DIRECTORY, threadLocks);
                   break;
                default:
-                  fprintf(stderr, "Error: invalid node type\n");
-                  exit(EXIT_FAILURE);
+                  errorParse("Error: invalid node type");
             }
             break;
 
@@ -227,16 +215,15 @@ void *applyCommands(void*ptr){
             break;
 
          case 'm':
-            fprintf(stdout, "Move: %s to %s\n", name, type);   
-            move(name, type, threadLocks);
+            fprintf(stdout, "Move: %s to %s\n", name, endName);   
+            move(name, endName, threadLocks);
             break;
 
          case 'q':
             return NULL;
 
          default: { /* error */
-            fprintf(stderr, "Error: command to apply\n");
-            exit(EXIT_FAILURE);
+            errorParse("Error: command to apply");
          }
       }
    }
@@ -249,18 +236,25 @@ void *applyCommands(void*ptr){
  */
 void argParse(int argc, char* argv[]){
    if(argc != 4)
-      fprintf(stderr, "Error: Incorrect number of arguments given.\n");
+      errorParse("Error: Incorrect number of arguments given");
    else if(!argv[1])
-      fprintf(stderr, "Error: Input file given is NULL.\n");
+      errorParse("Error: Input file given is NULL");
    else if(!argv[2])
-      fprintf(stderr, "Error: Output file given is NULL.\n");
+      errorParse("Error: Output file given is NULL");
    else if(atoi(argv[3]) <= 0)
-      fprintf(stderr, "Error: Invalid number of threads given.\n");
+      errorParse("Error: Invalid number of threads given");
    else {
       numberThreads = atoi(argv[3]);  //sets global var for the number of threads
       return;
    }
-   exit(EXIT_FAILURE);
+}
+
+/*
+ * Initializes the pthread conds
+ */
+void init_cond(){
+   if(pthread_cond_init(&podeCons, NULL) || pthread_cond_init(&podeProd, NULL)) 
+      errorParse("Error: thread cond init failed");
 }
 
 int main(int argc, char* argv[]) {
@@ -269,48 +263,36 @@ int main(int argc, char* argv[]) {
    struct timeval startTime, endTime;
    int i;
 
-   pthread_t threadPool[numberThreads];
-   pthread_t threadProd;
+   pthread_t threadPool[numberThreads+1];
 
    /* init filesystem */
    init_fs();
 
    gettimeofday(&startTime, NULL);
 
-   if(pthread_cond_init(&podeCons, NULL) || pthread_cond_init(&podeProd, NULL)) {
-      fprintf(stderr, "Error: thread condition init failed.\n");
-      exit(EXIT_FAILURE);
-   }
+   init_cond();
 
-   if(pthread_create(&threadProd, NULL, processInput, argv[1])){
-      fprintf(stderr, "Error: thread creation failed.\n");
-      exit(EXIT_FAILURE);
-   }
+   if(pthread_create(&threadPool[numberThreads], NULL, processInput, argv[1]))
+      errorParse("Error: producer thread creation failed");
 
    lockArray locks[numberThreads];
 
    for(i = 0; i < numberThreads; i++){
       locks[i].lockCount = 0;
-      if(pthread_create(&threadPool[i], NULL, applyCommands, &locks[i])){
-         fprintf(stderr, "Error: thread creation failed.\n");
-         exit(EXIT_FAILURE);
-      }
+      if(pthread_create(&threadPool[i], NULL, applyCommands, &locks[i]))
+         errorParse("Error: consumer thread creation failed");
    }
 
-   if(pthread_join(threadProd, NULL)){
-      fprintf(stderr, "Error: thread merging failed.\n");
-      exit(EXIT_FAILURE);
-   }
-   for(i = 0; i < numberThreads; i++){     
-      if(pthread_join(threadPool[i], NULL)){
-         fprintf(stderr, "Error: thread merging failed.\n");
-         exit(EXIT_FAILURE);
-      }
+   for(i = 0; i <= numberThreads; i++){     
+      if(pthread_join(threadPool[i], NULL))
+         errorParse("Error: thread merging failed");
    }
    
    gettimeofday(&endTime, NULL);
 
-   print_tecnicofs_tree(argv[2], startTime, endTime);
+   print_tecnicofs_tree(argv[2]);
+
+   printf("TecnicoFS completed in %.4f seconds.\n", (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec) / 1e6);
    
    /* release allocated memory */
    destroy_fs();

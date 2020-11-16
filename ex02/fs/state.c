@@ -258,7 +258,7 @@ void inode_lock(int inumber, int mode){
     }
     else if(mode == RD){
         if(pthread_rwlock_rdlock(&inode_table[inumber].rwlock)){
-            fprintf(stderr, "Error: Could not lock %d with rd.\n", inumber);
+            fprintf(stderr, "Error: Could not lock with rd.\n");
             exit(EXIT_FAILURE);
         }
     }
