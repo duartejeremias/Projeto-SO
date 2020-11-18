@@ -25,15 +25,16 @@ then
     exit 1
 fi
 
+echo "-------------------------------------------------------"
+
 for testFile in $inputdir/*.txt; do
-    # calcula numero random de threads com que executar
-    randomNum=$(($RANDOM%$maxthreads)) 
-    randomThreads=$(($randomNum+1))
-
-    fileName=$(basename $testFile .txt)
-
-    echo -e "InputFile=$(basename $testFile) NumThreads=$randomThreads"
-    ./tecnicofs $testFile $outputdir/$fileName-$randomThreads.txt $randomThreads &> /dev/null
-    grep 'completed' $outputdir/$fileName-$randomThreads.txt
     
+    for ((x = 1; x <= maxthreads; x++)) ; do
+        echo
+        fileName=$(basename $testFile .txt)
+        echo -e "InputFile=$(basename $testFile) NumThreads=$x"
+        ./tecnicofs $testFile $outputdir/$fileName-$x.txt $x 2> /dev/null | grep "completed"
+        echo
+    done
+    echo "-------------------------------------------------------"
 done

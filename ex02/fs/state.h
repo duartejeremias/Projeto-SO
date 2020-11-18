@@ -17,8 +17,13 @@
 
 #define DELAY 5000
 
+#define TIME 0.5
+
 #define WR 1
 #define RD 2
+#define TRY 1
+#define NO_TRY 2
+#define ERROR 3
 
 /*
  * Contains the name of the entry and respective i-number
@@ -58,6 +63,7 @@ int dir_reset_entry(int inumber, int sub_inumber);
 int dir_add_entry(int inumber, int sub_inumber, char *sub_name);
 void inode_print_tree(FILE *fp, int inumber, char *name);
 void inode_lock(int inumber, int mode);
+int inode_trylock(int inumber, int mode);
 void inode_unlock(int inumber);
 
 #endif /* INODES_H */
