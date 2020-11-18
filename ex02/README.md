@@ -4,7 +4,7 @@
 
 ## Pseudocodigo/alteracoes a fazer
 
-### <s> 1.Sincronizacao fina dos inodes </s>
+### 1.Sincronizacao fina dos inodes
 
 * O desempenho paralelo do exercicio 1 foi desapontante devido ao metodo de sincronizacao utilizado;
 
@@ -27,7 +27,7 @@
     op2: c /a d
     Estas operacoes nao podem ser executadas concorrentemente pois a op2 esta a criar uma diretoria (inode) no mesmo path da op1 (/ ou root)
 
-### <s> 2.Execucao incremental de comandos </s>
+### 2.Execucao incremental de comandos
 
 * Devemos alterar o metodo de carregamento de comandos para o programa;
 
@@ -69,7 +69,7 @@
     Esta op nao pode ser executada se o f2 da diretoria B ja existir;
     Caso contrario pode-se executar.
 
-### <s> 4.Nova op: Shell script </s>
+### 4.Nova op: Shell script
 
 * Devemos criar um shell script chamado __runTests.sh__;
 
