@@ -76,24 +76,30 @@ void *processInput(void *ptr){
    char token, type[MAX_INPUT_SIZE];
    char name[MAX_INPUT_SIZE];
 
-   /* break loop with ^Z or ^D */
+
    while (TRUE) {
       
       char *end = fgets(line, sizeof(line)/sizeof(char), inputFile);
       int numTokens = sscanf(line, "%c %s %s", &token, name, type);
 
-      if(pthread_mutex_lock(&mutex)) 
+      if(pthread_mutex_lock(&mutex)){
+         fclose(inputFile);
          errorParse("Error: Producer thread lock failed");
+      }
 
       while(!(existingCommands < MAX_COMMANDS))
-         if(pthread_cond_wait(&podeProd, &mutex)) 
+         if(pthread_cond_wait(&podeProd, &mutex)) {
+            fclose(inputFile);
             errorParse("Error: Producer thread waiting failed");
+         }
       
 
       if(end == NULL || *end == EOF){
          insertCommand("quit");
-         if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)) 
+         if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)) { 
+            fclose(inputFile);
             errorParse("Error: Producer thread unlock/signal failed");
+         }
          break;
       }
       
@@ -139,8 +145,10 @@ void *processInput(void *ptr){
          }
       }
 
-      if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)) 
+      if(pthread_cond_signal(&podeCons) || pthread_mutex_unlock(&mutex)) {
+         fclose(inputFile);
          errorParse("Error: Producer thread unlocking/signal failed");
+      }
    }
 
    fclose(inputFile);
@@ -150,7 +158,7 @@ void *processInput(void *ptr){
 void *applyCommands(void*ptr){
    lockArray *threadLocks = (lockArray *) ptr;
 
-   char token, node;
+   char token, nodeType;
    char name[MAX_INPUT_SIZE], endName[MAX_INPUT_SIZE];
    
    while (TRUE){
@@ -172,7 +180,7 @@ void *applyCommands(void*ptr){
          token = 'q';
       }
       else if(command[0] == 'c')
-         numTokens = sscanf(command, "%c %s %c", &token, name, &node);
+         numTokens = sscanf(command, "%c %s %c", &token, name, &nodeType);
       else if(command[0] == 'm')
          numTokens = sscanf(command, "%c %s %s", &token, name, endName);
       else 
@@ -187,7 +195,7 @@ void *applyCommands(void*ptr){
       int searchResult;
       switch (token) {
          case 'c':
-            switch (node) {
+            switch (nodeType) {
                case 'f':
                   fprintf(stdout, "Create file: %s\n", name);
                   create(name, T_FILE, threadLocks);
@@ -257,6 +265,14 @@ void init_cond(){
       errorParse("Error: thread cond init failed");
 }
 
+/*
+ * Terminates the pthread conds
+ */
+void destroy_cond(){
+   if(pthread_cond_destroy(&podeCons) || pthread_cond_destroy(&podeProd))
+      errorParse("Error: thread cond destruction failed");
+}
+
 int main(int argc, char* argv[]) {
    argParse(argc, argv);
 
@@ -294,6 +310,8 @@ int main(int argc, char* argv[]) {
 
    printf("TecnicoFS completed in %.4f seconds.\n", (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_usec - startTime.tv_usec) / 1e6);
    
+   destroy_cond();
+
    /* release allocated memory */
    destroy_fs();
    
