@@ -387,7 +387,7 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
 
 		if(end_parent_inumber == ERROR){ // if trylock failed
 			unlock(threadLocks);
-			sleep(TIME);
+			usleep(TIME);
 		}
 
 		// checking if end directory exists
@@ -399,7 +399,7 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
 
 		if(try_lock(end_parent_inumber, threadLocks, WR) == FAIL){  // tries to lock end parent
 			unlock(threadLocks);
-			sleep(TIME);
+			usleep(TIME);
 		}
 
 		inode_get(end_parent_inumber, &nType, &data); // getting the endPath directory contents
