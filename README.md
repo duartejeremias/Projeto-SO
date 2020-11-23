@@ -8,8 +8,8 @@
 
 - [x] criar repositorio;
 - [x] fazer ex1;
-- [ ] fazer ex2;
-- [ ] ...;
+- [x] fazer ex2;
+- [ ] fazer ex3;
 
 ### Links de interesse
 
@@ -17,5 +17,5 @@
 
 ## Autores
 
-+@duartejeremias
-+@RodrigoLiu1710
+@duartejeremias
+@RodrigoLiu1710
