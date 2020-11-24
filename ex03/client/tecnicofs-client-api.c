@@ -6,10 +6,9 @@
 #include <sys/un.h>
 #include <stdio.h>
 
-#define CLIENT_NAME "/tmp/client"
-
 int sockfd;
 char server[MAX_FILE_NAME];
+char client[MAX_FILE_NAME];
 socklen_t servlen;
 struct sockaddr_un serv_addr;
 
@@ -135,9 +134,12 @@ int tfsMount(char * serverName) {
     return FAIL;
   }
 
-  unlink(CLIENT_NAME);
+  // creates client name
+  sprintf(client, "/tmp/client_%d", getpid());
 
-  clilen = setSockAddrUn(CLIENT_NAME, &client_addr);
+  unlink(client);
+
+  clilen = setSockAddrUn(client, &client_addr);
   if (bind(sockfd, (struct sockaddr *) &client_addr, clilen) < 0) {
     perror("client: bind error");
     return FAIL;
@@ -156,7 +158,7 @@ int tfsUnmount() {
     return FAIL;
   }
   
-  if(unlink(CLIENT_NAME) < 0){
+  if(unlink(client) < 0){
     fprintf(stderr, "Error: Coud not unlink\n");
     return FAIL;
   }

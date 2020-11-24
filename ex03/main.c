@@ -23,10 +23,11 @@
 #define TRUE 1
 #define FALSE 0
 
-#define INDIM 30
-#define OUTDIM 512
+#define SUCCESS_MSG "SUCCESS"
+#define FAIL_MSG "FAIL"
 
 int numberThreads = 0;
+int sockfd;
 
 int setSockAddrUn(char *path, struct sockaddr_un *addr) {
 
@@ -50,18 +51,25 @@ void *applyCommands(void*ptr){
 
    char token, nodeType;
    char name[MAX_INPUT_SIZE], endName[MAX_INPUT_SIZE];
+
+   socklen_t addrlen;
+   struct sockaddr_un client_addr;
+   char command[MAX_INPUT_SIZE];
+   int c, result;
+
+   addrlen = sizeof(struct sockaddr_un);
    
    while (TRUE){
+      // recebe mensagem do client
+      c = recvfrom(sockfd, command, sizeof(command)-1, 0, (struct sockaddr *)&client_addr, &addrlen);
 
-      const char* command = "wack";
+      if(c  <= 0) continue;
 
       int numTokens;
 
-      if(command == NULL){
-         numTokens = 2;
-         token = 'q';
-      }
-      else if(command[0] == 'c')
+      command[c]='\0'; // caso preventivo
+
+      if(command[0] == 'c')
          numTokens = sscanf(command, "%c %s %c", &token, name, &nodeType);
       else if(command[0] == 'm')
          numTokens = sscanf(command, "%c %s %s", &token, name, endName);
@@ -71,17 +79,16 @@ void *applyCommands(void*ptr){
       if (numTokens < 2) 
          errorParse("Error: invalid command in Queue");
 
-      int searchResult;
       switch (token) {
          case 'c':
             switch (nodeType) {
                case 'f':
                   fprintf(stdout, "Create file: %s\n", name);
-                  create(name, T_FILE, threadLocks);
+                  result = create(name, T_FILE, threadLocks);
                   break;
                case 'd':
                   fprintf(stdout,"Create directory: %s\n", name);
-                  create(name, T_DIRECTORY, threadLocks);
+                  result = create(name, T_DIRECTORY, threadLocks);
                   break;
                default:
                   errorParse("Error: invalid node type");
@@ -89,8 +96,8 @@ void *applyCommands(void*ptr){
             break;
 
          case 'l':
-            searchResult = lookup(name, threadLocks);
-            if (searchResult >= 0)
+            result = lookup(name, threadLocks);
+            if (result >= 0)
                fprintf(stdout, "Search: %s found\n", name);
             else
                fprintf(stdout, "Search: %s not found\n", name);
@@ -98,23 +105,25 @@ void *applyCommands(void*ptr){
 
          case 'd':
             fprintf(stdout, "Delete: %s\n", name);
-            delete(name, threadLocks);
+            result = delete(name, threadLocks);
             break;
 
          case 'm':
             fprintf(stdout, "Move: %s to %s\n", name, endName);   
-            move(name, endName, threadLocks);
+            result = move(name, endName, threadLocks);
             break;
 
          case 'p':
             fprintf(stdout, "Print file system\n");
-            print_tecnicofs_tree(name);
+            result = print_tecnicofs_tree(name);
             break;
 
          default: { /* error */
             errorParse("Error: command to apply");
          }
       }
+      if(result == SUCCESS) sendto(sockfd, SUCCESS_MSG, sizeof(SUCCESS_MSG), 0, (struct sockaddr *)&client_addr, addrlen);
+      else sendto(sockfd, FAIL_MSG, sizeof(FAIL_MSG), 0, (struct sockaddr *)&client_addr, addrlen);
    }
    return NULL;
 }
@@ -142,9 +151,6 @@ void argParse(int argc, char* argv[]){
 int main(int argc, char* argv[]) {
    argParse(argc, argv);
 
-   int i, hasCreatedThreads = FALSE;
-
-   int sockfd;
    struct sockaddr_un server_addr;
    socklen_t addrlen;
 
@@ -166,30 +172,16 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
    }
 
-   while(1){
-      struct sockaddr_un client_addr;
-      char in_buffer[INDIM], success[] = "SUCCESS", fail[] = "FAIL";
-      int c;
-
-      addrlen = sizeof(struct sockaddr_un);
-      // recebe mensagem do client
-      c = recvfrom(sockfd, in_buffer, sizeof(in_buffer)-1, 0, (struct sockaddr *)&client_addr, &addrlen);
-
-      if (c <= 0) continue; // se nao foi enviada mensagem, passa a proxima iteracao
-
-      sendto(sockfd, success, sizeof(success), 0, (struct sockaddr *)&client_addr, addrlen);
-
-      //Preventivo, caso o cliente nao tenha terminado a mensagem em '\0', 
-      in_buffer[c]='\0';
-      fprintf(stdout, "%s\n", in_buffer);
-   }
-
-   for(i = 0; i < numberThreads; i++){
+   for(int i = 0; i < numberThreads; i++){
       locks[i].lockCount = 0;
       if(pthread_create(&threadPool[i], NULL, applyCommands, &locks[i]))
-         errorParse("Error: consumer thread creation failed");
+         errorParse("Error: thread creation failed");
    }
 
+   for(int i = 0; i < numberThreads; i++){     
+      if(pthread_join(threadPool[i], NULL))
+         errorParse("Error: thread merging failed");
+   }
 
    /* release allocated memory */
    destroy_fs();

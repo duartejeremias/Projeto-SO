@@ -1,24 +1,24 @@
 # SO Project 2020-21
-## Exercise 3 base code.
 
-## How to run
+## Exercise 3 base code
+
+## How to run client
+
 Execute the following command:
-```
+
+```sh
 ./tecnicofs-client <inputfile> <server_socket_name>
 ```
+
 ## 1. Comunicacao entre processos clientes
 
 ### 1.1 Completar API do cliente
 
-- Fazer com que o nome do socket do cliente seja do tipo "client_PID" em que PID e o process id do processo a correr o filho.
-
-- De resto principio esta done.
+- Em principio esta done.
 
 ### 1.2  Re-estruturar o tecnicofs (agora servidor)
 
-- O tecnicofs (main.c) precisa de ter a tarefa principal a iniciar o servidor, sendo que as tarefas escravas vao receber comandos do cliente, tornando o process input original, variaveis de condicao, inputCommand e removeCommand obsoletos;
-
-- O programa e suposto nao terminar, tornando obsoleto o gettimeofday e o shell script;
+- Em principio esta done.
 
 ## 2. Novo commando P
 
