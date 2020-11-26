@@ -97,10 +97,13 @@ void *applyCommands(void*ptr){
 
          case 'l':
             result = lookup(name, threadLocks);
-            if (result >= 0)
+            if (result >= 0) {
                fprintf(stdout, "Search: %s found\n", name);
-            else
+               result = SUCCESS;
+            } else {
                fprintf(stdout, "Search: %s not found\n", name);
+               result = FAIL;
+            }
             break;
 
          case 'd':
@@ -157,7 +160,7 @@ int main(int argc, char* argv[]) {
    lockArray locks[numberThreads];
    pthread_t threadPool[numberThreads];
 
-   // initializes file system
+   /* initializes file system */
    init_fs();
 
    /* init server */

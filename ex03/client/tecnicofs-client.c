@@ -72,15 +72,17 @@ void *processInput() {
                         fprintf(stderr, "Error: invalid node type\n");
                 }
                 break;
+
             case 'l':
                 if(numTokens != 2)
                     errorParse();
                 res = tfsLookup(arg1);
-                if (res >= 0)
+                if (!res)
                     printf("Search: %s found\n", arg1);
                 else
                     printf("Search: %s not found\n", arg1);
                 break;
+
             case 'd':
                 if(numTokens != 2)
                     errorParse();
@@ -90,6 +92,7 @@ void *processInput() {
                 else
                     printf("Unable to delete: %s\n", arg1);
                 break;
+
             case 'm':
                 if(numTokens != 3)
                     errorParse();
@@ -112,6 +115,7 @@ void *processInput() {
                 
             case '#':
                 break;
+
             default: { /* error */
                 errorParse();
             }
