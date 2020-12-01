@@ -117,8 +117,8 @@ void *applyCommands(void*ptr){
             break;
 
          case 'p':
-            fprintf(stdout, "Print file system\n");
-            result = print_tecnicofs_tree(name);
+            fprintf(stdout, "Print file system: %s\n", name);
+            result = print_tecnicofs_tree(name, threadLocks);
             break;
 
          default: { /* error */

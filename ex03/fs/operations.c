@@ -440,9 +440,18 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
  * Input:
  *  - fp: pointer to output file
  */
-int print_tecnicofs_tree(char *fileName){
+int print_tecnicofs_tree(char *fileName, lockArray *threadLocks){
 	FILE *outputFile = fopen(fileName, "w");
+	int ableToPrint = FALSE;
+	while(!ableToPrint) {
+		if(try_lock(FS_ROOT, threadLocks, RD) == FAIL){
+			unlock(threadLocks);
+			usleep(TIME);
+		}
+		ableToPrint = TRUE;
+	}
 	inode_print_tree(outputFile, FS_ROOT, "");
+	unlock(threadLocks);
 	fclose(outputFile);
 	return SUCCESS;
 }

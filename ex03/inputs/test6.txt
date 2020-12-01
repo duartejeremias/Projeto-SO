@@ -8,6 +8,7 @@ c /b d
 c /a d
 c /b d
 c /a d
+p output1.txt
 c /b d
 c /a d
 c /b d
@@ -30,6 +31,7 @@ l /
 l /
 l /
 l /
+p output2.txt
 l /
 l /
 l /
