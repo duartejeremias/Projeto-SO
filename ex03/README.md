@@ -22,10 +22,4 @@ Execute the following command:
 
 ## 2. Novo commando P
 
-- Estrutura do comando: "p outputFile" em que outputFile e o path do ficheiro para onde vai ser feito o print;
-
-- Na API ja esta feito logo so falta implementar mesmo;
-
-- E necessario que o print seja feito quando nao ha tarefas nenhumas a interagir com o fs. Sendo necessario esperar caso estejam la dentro tarefas;
-
-- Se alguma tarefa tentar aceder ao fs enquanto o print esta a ser feito, tambem deve esperar.
+- Em principio esta done.

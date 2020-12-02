@@ -443,16 +443,28 @@ int move(char *startDir, char *endDir, lockArray *threadLocks){
 int print_tecnicofs_tree(char *fileName, lockArray *threadLocks){
 	FILE *outputFile = fopen(fileName, "w");
 	int ableToPrint = FALSE;
+
+	if(outputFile == NULL) {
+		perror("Error: Could not open file\n");
+		return FAIL;
+	}
+
 	while(!ableToPrint) {
 		if(try_lock(FS_ROOT, threadLocks, RD) == FAIL){
 			unlock(threadLocks);
 			usleep(TIME);
+			continue;
 		}
 		ableToPrint = TRUE;
 	}
+
 	inode_print_tree(outputFile, FS_ROOT, "");
 	unlock(threadLocks);
-	fclose(outputFile);
+
+	if(fclose(outputFile) == EOF){
+		perror("Error: Could not close file\n");
+		return FAIL;
+	}
 	return SUCCESS;
 }
 
