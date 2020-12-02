@@ -450,7 +450,7 @@ int print_tecnicofs_tree(char *fileName, lockArray *threadLocks){
 	}
 
 	while(!ableToPrint) {
-		if(try_lock(FS_ROOT, threadLocks, RD) == FAIL){
+		if(try_lock(FS_ROOT, threadLocks, WR) == FAIL){
 			unlock(threadLocks);
 			usleep(TIME);
 			continue;
