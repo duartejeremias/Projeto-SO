@@ -61,7 +61,10 @@ void *applyCommands(void*ptr){
    
    while (TRUE){
       // recebe mensagem do client
-      c = recvfrom(sockfd, command, sizeof(command)-1, 0, (struct sockaddr *)&client_addr, &addrlen);
+      if((c = recvfrom(sockfd, command, sizeof(command)-1, 0, (struct sockaddr *)&client_addr, &addrlen)) == FAIL) {
+         errorParse("Could not receive command from client\n");
+         exit(EXIT_FAILURE);
+      }
 
       if(c  <= 0) continue;
 
@@ -77,7 +80,7 @@ void *applyCommands(void*ptr){
          numTokens = sscanf(command, "%c %s", &token, name);
 
       if (numTokens < 2) 
-         errorParse("Error: invalid command in Queue");
+         errorParse("Error: invalid command in Queue\n");
 
       switch (token) {
          case 'c':
@@ -125,8 +128,18 @@ void *applyCommands(void*ptr){
             errorParse("Error: command to apply");
          }
       }
-      if(result == SUCCESS) sendto(sockfd, SUCCESS_MSG, sizeof(SUCCESS_MSG), 0, (struct sockaddr *)&client_addr, addrlen);
-      else sendto(sockfd, FAIL_MSG, sizeof(FAIL_MSG), 0, (struct sockaddr *)&client_addr, addrlen);
+      if(result == SUCCESS){
+         if(sendto(sockfd, SUCCESS_MSG, sizeof(SUCCESS_MSG), 0, (struct sockaddr *)&client_addr, addrlen) == FAIL) {
+            errorParse("Could not send SUCCESS message to client\n");
+            exit(EXIT_FAILURE);
+         }
+      } 
+      else {
+         if(sendto(sockfd, FAIL_MSG, sizeof(FAIL_MSG), 0, (struct sockaddr *)&client_addr, addrlen) == FAIL) {
+            errorParse("Could not send FAIL message to client\n");
+            exit(EXIT_FAILURE);
+         }
+      } 
    }
    return NULL;
 }
