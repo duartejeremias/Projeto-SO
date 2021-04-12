@@ -21,4 +21,7 @@
 1. <s> Criar pool de threads para alimentar com comandos e funcoes </s>
 2. <s> Criar funcoes de sincronizacao com mutex </s>
 
-## DONE
+## Enunciado
+
+[projeto-ex1-SO-20-21.pdf](https://github.com/duartejeremias/Projeto-SO/files/6299074/projeto-ex1-SO-20-21.pdf)
+
