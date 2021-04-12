@@ -23,3 +23,7 @@ Execute the following command:
 ## <s> 2. Novo commando P </s>
 
 - Em principio esta done.
+
+## Enunciado
+
+[projeto-ex3-SO-20-21.pdf](https://github.com/duartejeremias/Projeto-SO/files/6299068/projeto-ex3-SO-20-21.pdf)
