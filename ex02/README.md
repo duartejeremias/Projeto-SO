@@ -87,3 +87,8 @@
 * Apos cada teste, o script devera apenas imprimir: "TecnicoFS completed in __duracao__ seconds";
 
 * Apos cada teste, devera ser criado na __outputdir__ um ficheiro contendo o estado final do FS. O nome do ficheiro devera ser "__nomeFicheiroEntrada__-__numeroDeTarefas__.txt"
+
+## Enunciado
+
+[projeto-ex2-SO-20-21.pdf](https://github.com/duartejeremias/Projeto-SO/files/6299077/projeto-ex2-SO-20-21.pdf)
+
