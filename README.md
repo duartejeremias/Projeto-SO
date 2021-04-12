@@ -13,9 +13,9 @@
 - [x] fazer ex2;
 - [x] fazer ex3;
 
-### Links de interesse
+### Enunciado 
 
-<https://www.youtube.com/playlist?list=PL9IEJIKnBJjFZxuqyJ9JqVYmuFZHr7CFM>
+[projeto-geral-SO-20-21 v1.1.pdf](https://github.com/duartejeremias/Projeto-SO/files/6299054/projeto-geral-SO-20-21.v1.1.pdf)
 
 ## Autores
 
