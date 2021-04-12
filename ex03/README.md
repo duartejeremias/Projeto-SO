@@ -10,7 +10,7 @@ Execute the following command:
 ./tecnicofs-client <inputfile> <server_socket_name>
 ```
 
-## 1. Comunicacao entre processos clientes
+## <s> 1. Comunicacao entre processos clientes </s>
 
 ### 1.1 Completar API do cliente
 
@@ -20,6 +20,6 @@ Execute the following command:
 
 - Em principio esta done.
 
-## 2. Novo commando P
+## <s> 2. Novo commando P </s>
 
 - Em principio esta done.
